@@ -15,12 +15,12 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', '-m', type=str, default="Play")
+    parser.add_argument('--mode', '-m', type=str, default="AnGang")
     parser.add_argument('--num_layers', '-nl', type=int, default=5)
     parser.add_argument('--learning_rate', '-lr', type=float, default=0.001)
     parser.add_argument('--weight_decay', '-wd', type=float, default=0.00001)
     parser.add_argument('--batch_size', '-bs', type=int, default=512)
-    parser.add_argument('--epochs', '-e', type=int, default=15)
+    parser.add_argument('--epochs', '-e', type=int, default=10)
     args = parser.parse_args()
     assert args.mode in ["Play", "Chi", "Peng", "Gang", "AnGang", "BuGang"], \
         f'mode must be one of ["Play", "Chi", "Peng", "Gang", "AnGang", "BuGang"]'
@@ -77,6 +77,7 @@ if __name__ == "__main__":
             if evaluation_result["auc"] > max_auc:
                 max_auc = evaluation_result["auc"]
                 max_acc = acc
+                torch.save({"state_dict": model.state_dict()}, best_model_path)
         model.train()
         scheduler.step(acc)
     if args.mode == "Play":
