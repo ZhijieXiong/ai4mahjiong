@@ -1,4 +1,13 @@
-botzone_data
 pymj.egg-info
+build
+.ipynb_checkpoints
+__pycache__/
+*.py[cod]
+*$py.class
+.idea
+*.DS_Store
+**/.DS_Store
+
+botzone_data
 test
 scripts
