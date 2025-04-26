@@ -157,6 +157,8 @@ class SLDataset(Dataset):
                     exist_tiles[open_meld_tile + 1] -= 1
                 elif open_meld_type == "Peng":
                     exist_tiles[open_meld_tile] -= 3
+                else:
+                    exist_tiles[open_meld_tile] -= 4
         for played_tiles in players_discarded_tiles:
             for _, played_tile in played_tiles:
                 exist_tiles[played_tile] -= 1

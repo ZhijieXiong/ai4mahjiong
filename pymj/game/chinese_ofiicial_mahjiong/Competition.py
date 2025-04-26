@@ -39,7 +39,6 @@ class Competition:
             game_wind: int = self.random_generator.choice(list(range(4)))
             players_self_wind: list[int] = list(range(4))
             initial_card_walls: list[list[int]] = Game.get_initial_card_walls(self.random_generator)
-            # print(f"Round {r+1}")
             for i in range(24):
                 order: list = self.all_permutation[i]
                 players_self_wind_: list = []
@@ -72,9 +71,8 @@ class Competition:
                                 self.players_game_score[k] -= (8 + fan_score)
                             else:
                                 self.players_game_score[k] -= 8
-                # print(f"    Game Scores: {', '.join(list(map(str, self.players_game_score)))}")
             self.update_players_score()
-            print(f"    Round Scores: {', '.join(list(map(str, self.players_score)))}")
+            print(f"Round {r} Scores: {', '.join(list(map(str, self.players_score)))}")
             self.players_game_score = [0] * 4
 
     def update_players_score(self):

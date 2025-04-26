@@ -170,6 +170,7 @@ class Player:
         # self.log_hand_cards("摸牌后")
 
     def response_play(self, state: dict):
+        state["player_id"] = self.id
         state["self_wind"] = self.self_wind
         card2play_id = self.agent.choose_play(self.hand_card_ids, state)
         assert card2play_id in self.hand_card_ids, "打出的牌不是自己的手牌"
@@ -178,6 +179,7 @@ class Player:
         return card2play_id
 
     def response_chi(self, state: dict, middle_card_ids: list[int]) -> int:
+        state["player_id"] = self.id
         state["self_wind"] = self.self_wind
         middle_card_id: int = self.agent.choose_chi(self.hand_card_ids, state, middle_card_ids)
         if middle_card_id == -1:
@@ -201,6 +203,7 @@ class Player:
             return middle_card_id
 
     def response_peng(self, state: dict, card2peng_id: int) -> bool:
+        state["player_id"] = self.id
         state["self_wind"] = self.self_wind
         if self.agent.choose_peng(self.hand_card_ids, state, card2peng_id):
             assert card2peng_id in self.hand_card_ids, "没有准备杠的牌"
@@ -213,6 +216,7 @@ class Player:
             return False
 
     def response_gang(self, state: dict, card2gang_id: int) -> bool:
+        state["player_id"] = self.id
         state["self_wind"] = self.self_wind
         if self.agent.choose_gang(self.hand_card_ids, state, card2gang_id):
             assert card2gang_id in self.hand_card_ids, "没有准备杠的牌"
@@ -227,6 +231,7 @@ class Player:
             return False
 
     def response_bu_gang(self, state: dict, gang_card_ids: list[int]):
+        state["player_id"] = self.id
         state["self_wind"] = self.self_wind
         card2gang_id: int = self.agent.choose_bu_gang(self.hand_card_ids, state, gang_card_ids)
         if card2gang_id == -1:
@@ -237,6 +242,7 @@ class Player:
             return card2gang_id
 
     def response_an_gang(self, state: dict, gang_card_ids: list[int]):
+        state["player_id"] = self.id
         state["self_wind"] = self.self_wind
         card2gang_id: int = self.agent.choose_an_gang(self.hand_card_ids, state, gang_card_ids)
         if card2gang_id == -1:
@@ -253,10 +259,12 @@ class Player:
             return card2gang_id
 
     def response_hu(self, state: dict, fan_result: list[tuple[int, str]]) -> bool:
+        state["player_id"] = self.id
         state["self_wind"] = self.self_wind
         return self.agent.choose_hu(self.hand_card_ids, state, fan_result)
 
     def response_zi_mo_hu(self, state: dict, fan_result: list[tuple[int, str]]) -> bool:
+        state["player_id"] = self.id
         state["self_wind"] = self.self_wind
         return self.agent.choose_zi_mo_hu(self.hand_card_ids, state, fan_result)
 

@@ -17,19 +17,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', '-m', type=str, default="AnGang")
     parser.add_argument('--num_layers', '-nl', type=int, default=5)
-    parser.add_argument('--learning_rate', '-lr', type=float, default=0.001)
-    parser.add_argument('--weight_decay', '-wd', type=float, default=0.00001)
+    parser.add_argument('--learning_rate', '-lr', type=float, default=0.0001)
+    parser.add_argument('--weight_decay', '-wd', type=float, default=0.000001)
     parser.add_argument('--batch_size', '-bs', type=int, default=512)
-    parser.add_argument('--epochs', '-e', type=int, default=10)
+    parser.add_argument('--epochs', '-e', type=int, default=20)
     args = parser.parse_args()
     assert args.mode in ["Play", "Chi", "Peng", "Gang", "AnGang", "BuGang"], \
         f'mode must be one of ["Play", "Chi", "Peng", "Gang", "AnGang", "BuGang"]'
 
-    model_dir = "/root/autodl-tmp/mah_jiong_models"
+    model_dir = "/root/autodl-tmp/mah_jiong/models"
     best_model_path = os.path.join(model_dir, f"{args.mode}_{args.num_layers}_{args.learning_rate}_{args.batch_size}_{args.weight_decay}.pt")
-
-    train_set = SLDataset(f"/root/code/ai4mahjiong/botzone_data/train/{args.mode}.pt", DEVICE)
-    valid_set = SLDataset(f"/root/code/ai4mahjiong/botzone_data/valid/{args.mode}.pt", DEVICE)
+    train_set = SLDataset(f"/root/autodl-tmp/mah_jiong/sl_data/train/{args.mode}.pt", DEVICE)
+    valid_set = SLDataset(f"/root/autodl-tmp/mah_jiong/sl_data/valid/{args.mode}.pt", DEVICE)
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     valid_loader = DataLoader(valid_set, batch_size=2048)
 
