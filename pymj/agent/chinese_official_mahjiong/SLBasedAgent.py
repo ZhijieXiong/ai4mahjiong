@@ -177,20 +177,16 @@ class SLBasedAgent(Agent):
 
     def choose_chi(self, self_hand_card_ids: list[int], state: dict, middle_card_ids: list[int]) -> int:
         if self.chi_model is None:
-            return (
-                choose_card2chi(self_hand_card_ids, middle_card_ids) if \
-                    self.use_choose_card2_chi else self.random_generator.choice(middle_card_ids)
-            ) if self.chi else -1
+            return choose_card2chi(self_hand_card_ids, middle_card_ids) if \
+                self.use_choose_card2_chi else self.random_generator.choice(middle_card_ids)
         else:
             features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
             features = torch.tensor([features]).float().to(self.device)
             do_chi = self.chi_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
             if do_chi:
-                return (
-                    choose_card2chi(self_hand_card_ids, middle_card_ids) if \
-                        self.use_choose_card2_chi else self.random_generator.choice(middle_card_ids)
-                ) if self.chi else -1
+                return choose_card2chi(self_hand_card_ids, middle_card_ids) if \
+                    self.use_choose_card2_chi else self.random_generator.choice(middle_card_ids)
             else:
                 return -1
 
