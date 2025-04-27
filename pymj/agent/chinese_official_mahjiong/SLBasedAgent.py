@@ -1,11 +1,12 @@
 import torch
-import random
 import os
+import numpy as np
 from collections import defaultdict
 
 from pymj.agent.chinese_official_mahjiong.Agent import Agent
 from pymj.dnn_model.resnet import PlayModel, FuroModel
 from pymj.botzone.SLDataset1 import SLDataset
+from pymj.agent.chinese_official_mahjiong.utils import choose_card2chi
 
 
 class SLBasedAgent(Agent):
@@ -18,7 +19,8 @@ class SLBasedAgent(Agent):
         "AnGang": 5
     }
     
-    def __init__(self, play_model_path: str = None, chi_model_path: str = None, peng_model_path: str = None, gang_model_path: str = None, bu_gang_model_path: str = None, an_gang_model_path: str = None, device: str = "cpu"):
+    def __init__(self, random_generator: np.random.RandomState, play_model_path: str = None, chi_model_path: str = None, peng_model_path: str = None, gang_model_path: str = None, bu_gang_model_path: str = None, an_gang_model_path: str = None, device: str = "cpu", use_choose_card2_chi: bool = True):
+        self.random_generator: np.random.RandomState = random_generator
         self.device: str = device
         self.play_model: PlayModel = None
         if play_model_path is not None:
@@ -44,6 +46,7 @@ class SLBasedAgent(Agent):
         if an_gang_model_path is not None:
             self.an_gang_model = SLBasedAgent.load_model(an_gang_model_path, "Furo", self.device)
             self.an_gang_model.eval()
+        self.use_choose_card2_chi: bool = use_choose_card2_chi
             
     @staticmethod
     def load_model(model_path: str, model_type: str, device: str):
@@ -124,8 +127,8 @@ class SLBasedAgent(Agent):
                     exist_tiles[meld_card_id + 1] -= 1
                 elif meld_type == "Peng":
                     exist_tiles[meld_card_id] -= 3
-                # else:
-                #     exist_tiles[meld_card_id] -= 4
+                else:
+                    exist_tiles[meld_card_id] -= 4
         for player_played_card_ids in players_played_card_ids:
             for player_played_card_id in player_played_card_ids:
                 exist_tiles[player_played_card_id] -= 1
@@ -151,29 +154,49 @@ class SLBasedAgent(Agent):
     def feature_last_action(state: dict) -> list[list[int]]:
         last_observation: tuple[int, str, int] = state["last_observation"]
         features = [0] * 35
-        if len(last_observation[1]) > 0:
+        if len(last_observation[1]) > 0 and last_observation[1] != "Draw":
+            # todo: 训练模型时没考虑上一个动作是Draw，目前先不考虑这个
             features[SLBasedAgent.DRAW_SOURCE[last_observation[1]]] = 1
         return [features]
 
     def choose_play(self, self_hand_card_ids: list[int], state: dict) -> int:
         if self.play_model is None:
-            return random.choice(self_hand_card_ids)
+            return self.random_generator.choice(self_hand_card_ids)
         else:
             features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
             features = torch.tensor([features]).float().to(self.device)
+            model_output: torch.Tensor = self.play_model(features)
+            card2play_ids: list[int] = torch.sort(model_output[0, :-1], descending=True)[1].tolist()
+            i: int = 0
+            card2play_id: int = card2play_ids[i]
+            while card2play_id not in self_hand_card_ids:
+                i += 1
+                card2play_id = card2play_ids[i]
+            return card2play_id
 
     def choose_chi(self, self_hand_card_ids: list[int], state: dict, middle_card_ids: list[int]) -> int:
         if self.chi_model is None:
-            return middle_card_ids[0]
+            return (
+                choose_card2chi(self_hand_card_ids, middle_card_ids) if \
+                    self.use_choose_card2_chi else self.random_generator.choice(middle_card_ids)
+            ) if self.chi else -1
         else:
             features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
             features = torch.tensor([features]).float().to(self.device)
+            do_chi = self.chi_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+            if do_chi:
+                return (
+                    choose_card2chi(self_hand_card_ids, middle_card_ids) if \
+                        self.use_choose_card2_chi else self.random_generator.choice(middle_card_ids)
+                ) if self.chi else -1
+            else:
+                return -1
 
     def choose_peng(self, self_hand_card_ids: list[int], state: dict, card2peng_id: int) -> bool:
         if self.peng_model is None:
-            return card2peng_id[0]
+            return True
         else:
             features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
@@ -182,7 +205,7 @@ class SLBasedAgent(Agent):
 
     def choose_gang(self, self_hand_card_ids: list[int], state: dict, card2gang_id: int) -> bool:
         if self.gang_model is None:
-            return card2gang_id
+            return True
         else:
             features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
@@ -200,9 +223,9 @@ class SLBasedAgent(Agent):
             features.append(card2gang_features)
             features = torch.tensor(features).float().to(self.device)
             # todo: 改进，多个二分类组成多分类
-            do_gang = self.bu_gang_model([features]).squeeze(dim=-1).detach().cpu().item() > 0.5
+            do_gang = self.bu_gang_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
             if do_gang:
-                return gang_card_ids[0]
+                return self.random_generator.choice(gang_card_ids)
             else:
                 return -1
 
@@ -216,9 +239,9 @@ class SLBasedAgent(Agent):
                 card2gang_features[card_id] = 1
             features.append(card2gang_features)
             features = torch.tensor(features).float().to(self.device)
-            do_gang = self.an_gang_model([features]).squeeze(dim=-1).detach().cpu().item() > 0.5
+            do_gang = self.an_gang_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
             if do_gang:
-                return gang_card_ids[0]
+                return self.random_generator.choice(gang_card_ids)
             else:
                 return -1
 

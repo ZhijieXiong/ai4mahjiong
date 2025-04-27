@@ -16,8 +16,8 @@ def get_suit_and_num(card_id):
 
 
 class EfficientAgent(FuLuRandomAgent):
-    def __init__(self, random_generator: np.random.RandomState):
-        super().__init__(random_generator)
+    def __init__(self, random_generator: np.random.RandomState, chi: bool = True, peng: bool = True, gang: bool = True, use_choose_card2_chi: bool = True):
+        super().__init__(random_generator, chi, peng, gang, use_choose_card2_chi)
 
     def choose_play(self, self_hand_card_ids: list[int], state: dict) -> int:
         counts = Counter(self_hand_card_ids)
