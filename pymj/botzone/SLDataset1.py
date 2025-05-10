@@ -269,10 +269,13 @@ class SLDataset(Dataset):
                 # 风：1 *35
                 input_data.extend(SLDataset.feature_wind(QF, MF))
 
-                # 弃牌前一个动作：1 * 35
+                # 副露的前一个动作：1 * 35
                 i_draw_source = [0] * 35
                 if last_action is not None:
-                    i_draw_source[SLDataset.DRAW_SOURCE[type(last_action)]] = 1
+                    if type(last_action) in SLDataset.DRAW_SOURCE:
+                        i_draw_source[SLDataset.DRAW_SOURCE[type(last_action)]] = 1
+                    else:
+                        i_draw_source[len(SLDataset.DRAW_SOURCE)] = 1
                 input_data.append(i_draw_source)
 
                 inputs.append(input_data)

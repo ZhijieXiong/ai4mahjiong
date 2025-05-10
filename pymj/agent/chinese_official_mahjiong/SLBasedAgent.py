@@ -16,7 +16,8 @@ class SLBasedAgent(Agent):
         "Peng": 2,
         "Gang": 3,
         "BuGang": 4,
-        "AnGang": 5
+        "AnGang": 5,
+        "Draw": 6
     }
     
     def __init__(self, random_generator: np.random.RandomState, play_model_path: str = None, chi_model_path: str = None, peng_model_path: str = None, gang_model_path: str = None, bu_gang_model_path: str = None, an_gang_model_path: str = None, device: str = "cpu", use_choose_card2_chi: bool = True):
@@ -140,7 +141,7 @@ class SLBasedAgent(Agent):
         return [features]
     
     @staticmethod
-    def get_commom_features(self_hand_card_ids: list[int], state: dict) -> list[list[int]]:
+    def get_common_features(self_hand_card_ids: list[int], state: dict) -> list[list[int]]:
         features: list[list[int]] = []
         features.extend(SLBasedAgent.feature_player_id(state))
         features.extend(SLBasedAgent.feature_self_cards(self_hand_card_ids))
@@ -154,16 +155,16 @@ class SLBasedAgent(Agent):
     def feature_last_action(state: dict) -> list[list[int]]:
         last_observation: tuple[int, str, int] = state["last_observation"]
         features = [0] * 35
-        if len(last_observation[1]) > 0 and last_observation[1] != "Draw":
-            # todo: 训练模型时没考虑上一个动作是Draw，目前先不考虑这个
+        if len(last_observation[1]) > 0:
             features[SLBasedAgent.DRAW_SOURCE[last_observation[1]]] = 1
+
         return [features]
 
     def choose_play(self, self_hand_card_ids: list[int], state: dict) -> int:
         if self.play_model is None:
             return self.random_generator.choice(self_hand_card_ids)
         else:
-            features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
+            features: list[list[int]] = SLBasedAgent.get_common_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
             features = torch.tensor([features]).float().to(self.device)
             model_output: torch.Tensor = self.play_model(features)
@@ -180,7 +181,7 @@ class SLBasedAgent(Agent):
             return choose_card2chi(self_hand_card_ids, middle_card_ids) if \
                 self.use_choose_card2_chi else self.random_generator.choice(middle_card_ids)
         else:
-            features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
+            features: list[list[int]] = SLBasedAgent.get_common_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
             features = torch.tensor([features]).float().to(self.device)
             do_chi = self.chi_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
@@ -194,7 +195,7 @@ class SLBasedAgent(Agent):
         if self.peng_model is None:
             return True
         else:
-            features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
+            features: list[list[int]] = SLBasedAgent.get_common_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
             features = torch.tensor([features]).float().to(self.device)
             return self.peng_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
@@ -203,7 +204,7 @@ class SLBasedAgent(Agent):
         if self.gang_model is None:
             return True
         else:
-            features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
+            features: list[list[int]] = SLBasedAgent.get_common_features(self_hand_card_ids, state)
             features.extend(SLBasedAgent.feature_last_action(state))
             features = torch.tensor([features]).float().to(self.device)
             return self.gang_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
@@ -212,7 +213,7 @@ class SLBasedAgent(Agent):
         if self.bu_gang_model is None:
             return gang_card_ids[0]
         else:
-            features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
+            features: list[list[int]] = SLBasedAgent.get_common_features(self_hand_card_ids, state)
             card2gang_features: list[int] = [0] * 35
             for card_id in gang_card_ids:
                 card2gang_features[card_id] = 1
@@ -229,7 +230,7 @@ class SLBasedAgent(Agent):
         if self.an_gang_model is None:
             return gang_card_ids[0]
         else:
-            features: list[list[int]] = SLBasedAgent.get_commom_features(self_hand_card_ids, state)
+            features: list[list[int]] = SLBasedAgent.get_common_features(self_hand_card_ids, state)
             card2gang_features: list[int] = [0] * 35
             for card_id in gang_card_ids:
                 card2gang_features[card_id] = 1

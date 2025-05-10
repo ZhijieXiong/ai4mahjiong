@@ -139,12 +139,12 @@ class Game:
         if sum(list(map(len, self.card_walls))) == 0:
             self.request_play()
             return
-        can_bu_gang = target_player.check_bu_gang(self.get_state())
-        if len(can_bu_gang) > 0:
+        card_ids2bu_gang = target_player.check_bu_gang(self.get_state())
+        if len(card_ids2bu_gang) > 0:
             # todo: 需要考虑抢杠胡
             pass
-        can_an_gang = target_player.check_an_gang()
-        if len(can_an_gang) > 0:
+        card_ids2an_gang = target_player.check_an_gang()
+        if len(card_ids2an_gang) > 0:
             # todo:
             pass
 
@@ -234,8 +234,9 @@ class Game:
     def request_an_gang(self, player_id: int, gang_card_ids: list[int]) -> None:
         card2gang_id: int = self.players[player_id].response_an_gang(self.get_state(), gang_card_ids)
         if card2gang_id != -1:
-            self.players_melds[player_id].append(("AnGang", player_id, card2gang_id))
-            self.last_observation = (player_id, "AnGang", card2gang_id)
+            # 国标麻将中暗杠不展示
+            self.players_melds[player_id].append(("AnGang", player_id, 35))
+            self.last_observation = (player_id, "AnGang", 35)
             self.request_draw()
             self.request_play()
 
