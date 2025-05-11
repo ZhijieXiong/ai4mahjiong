@@ -138,7 +138,10 @@ class SLDataset(Dataset):
             for meld_type, meld_card_id in player_open_melds:
                 i_player_open_meld = [0] * 35
                 i_player_open_meld[34] = SLDataset.MELD_TYPE[meld_type]
-                i_player_open_meld[meld_card_id] = 1
+                if meld_type != "AnGang":
+                    i_player_open_meld[meld_card_id] = 1
+                else:
+                    i_player_open_meld[34] = 1
                 i_player_open_melds.append(i_player_open_meld)
             for _ in range(4 - len(player_open_melds)):
                 i_player_open_melds.append([0] * 35)
@@ -157,7 +160,7 @@ class SLDataset(Dataset):
                     exist_tiles[open_meld_tile + 1] -= 1
                 elif open_meld_type == "Peng":
                     exist_tiles[open_meld_tile] -= 3
-                else:
+                elif open_meld_type in ["Gang", "BuGang"]:
                     exist_tiles[open_meld_tile] -= 4
         for played_tiles in players_discarded_tiles:
             for _, played_tile in played_tiles:

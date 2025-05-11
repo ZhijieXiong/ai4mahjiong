@@ -107,7 +107,10 @@ class SLBasedAgent(Agent):
             for meld_type, _, meld_card_id in player_melds:
                 player_feature = [0] * 35
                 player_feature[34] = SLDataset.MELD_TYPE[meld_type]
-                player_feature[meld_card_id] = 1
+                if meld_type != "AnGang":
+                    player_feature[meld_card_id] = 1
+                else:
+                    player_feature[34] = 1
                 player_features.append(player_feature)
             for _ in range(4 - len(player_melds)):
                 player_features.append([0] * 35)
@@ -115,7 +118,7 @@ class SLBasedAgent(Agent):
         return features
     
     @staticmethod
-    def festure_remain_cards(self_hand_card_ids: list[int], state: dict) -> list[list[int]]:
+    def feature_remain_cards(self_hand_card_ids: list[int], state: dict) -> list[list[int]]:
         players_played_card_ids: tuple[list[int], ...] = state["players_played_card_ids"]
         players_melds: tuple[list[tuple[str, int, int]], ...] = state["players_melds"]
         features: list[int] = [0] * 35
@@ -128,7 +131,7 @@ class SLBasedAgent(Agent):
                     exist_tiles[meld_card_id + 1] -= 1
                 elif meld_type == "Peng":
                     exist_tiles[meld_card_id] -= 3
-                else:
+                elif meld_type in ["Gang", "BuGang"]:
                     exist_tiles[meld_card_id] -= 4
         for player_played_card_ids in players_played_card_ids:
             for player_played_card_id in player_played_card_ids:
@@ -147,7 +150,7 @@ class SLBasedAgent(Agent):
         features.extend(SLBasedAgent.feature_self_cards(self_hand_card_ids))
         features.extend(SLBasedAgent.feature_players_melds(state))
         features.extend(SLBasedAgent.feature_players_played_cards(state))
-        features.extend(SLBasedAgent.festure_remain_cards(self_hand_card_ids, state))
+        features.extend(SLBasedAgent.feature_remain_cards(self_hand_card_ids, state))
         features.extend(SLBasedAgent.feature_wind(state))
         return features
     
