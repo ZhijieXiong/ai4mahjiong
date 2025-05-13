@@ -2,5 +2,6 @@ test1: Round 255 Scores: 452, 376, 309, 327
 test2: Round 255 Scores: 801, 494, 752, 497
 test3: Round 255 Scores: 792, 801, 489, 472
 test4: Round 255 Scores: 925, 849, 366, 409
-test5: Round 255 Scores: 705, 606, 630, 614
-test6: Round 255 Scores: 851, 818, 471, 415
+test5: Round 255 Scores: 698, 603, 642, 611
+test6: Round 255 Scores: 853, 804, 457, 440
+test7: Round 255 Scores: 674, 646, 633, 601

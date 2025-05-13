@@ -80,42 +80,42 @@ def test_competition5():
         [
             SLBasedAgent(
                 random_generator,
-                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_20_0.0001_256_1e-06.ckt",
-                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_15_0.0001_1024_1e-06.ckt",
-                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_15_0.0001_1024_1e-06.ckt",
-                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_10_0.0001_1024_1e-06.ckt",
-                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_10_0.0001_1024_1e-06.ckt",
-                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_10_0.0001_1024_1e-06.ckt",
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
                 device=DEVICE
             ),
             SLBasedAgent(
                 random_generator,
-                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_20_0.0001_256_1e-06.ckt",
-                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_15_0.0001_1024_1e-06.ckt",
-                # peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_15_0.0001_1024_1e-06.ckt",
-                # gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_10_0.0001_1024_1e-06.ckt",
-                # an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_10_0.0001_1024_1e-06.ckt",
-                # bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_10_0.0001_1024_1e-06.ckt",
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                # peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                # gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                # an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                # bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
                 device=DEVICE
             ),
             SLBasedAgent(
                 random_generator,
-                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_20_0.0001_256_1e-06.ckt",
-                # chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_15_0.0001_1024_1e-06.ckt",
-                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_15_0.0001_1024_1e-06.ckt",
-                # gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_10_0.0001_1024_1e-06.ckt",
-                # an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_10_0.0001_1024_1e-06.ckt",
-                # bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_10_0.0001_1024_1e-06.ckt",
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                # chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                # gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                # an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                # bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
                 device=DEVICE
             ),
             SLBasedAgent(
                 random_generator,
-                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_20_0.0001_256_1e-06.ckt",
-                # chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_15_0.0001_1024_1e-06.ckt",
-                # peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_15_0.0001_1024_1e-06.ckt",
-                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_10_0.0001_1024_1e-06.ckt",
-                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_10_0.0001_1024_1e-06.ckt",
-                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_10_0.0001_1024_1e-06.ckt",
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                # chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                # peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
                 device=DEVICE
             )
         ], 256, random_generator=random_generator).run()
@@ -131,33 +131,85 @@ def test_competition6():
         [
             SLBasedAgent(
                 random_generator,
-                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_20_0.0001_256_1e-06.ckt",
-                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_15_0.0001_1024_1e-06.ckt",
-                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_15_0.0001_1024_1e-06.ckt",
-                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_10_0.0001_1024_1e-06.ckt",
-                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_10_0.0001_1024_1e-06.ckt",
-                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_10_0.0001_1024_1e-06.ckt",
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
                 device=DEVICE, use_choose_card2_chi=True
             ),
             SLBasedAgent(
                 random_generator,
-                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_20_0.0001_256_1e-06.ckt",
-                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_15_0.0001_1024_1e-06.ckt",
-                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_15_0.0001_1024_1e-06.ckt",
-                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_10_0.0001_1024_1e-06.ckt",
-                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_10_0.0001_1024_1e-06.ckt",
-                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_10_0.0001_1024_1e-06.ckt",
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
                 device=DEVICE, use_choose_card2_chi=False
             ),
             EfficientAgent(random_generator, use_choose_card2_chi=True),
             EfficientAgent(random_generator, use_choose_card2_chi=False)
         ], 256, random_generator=random_generator).run()
+
+
+def test_competition7():
+    """
+    模型大小消融实验
+    """
+    random_seed = 0
+    random_generator: np.random.RandomState = np.random.RandomState(random_seed)
+    Competition(
+        [
+            SLBasedAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
+                device=DEVICE, use_choose_card2_chi=True
+            ),
+            SLBasedAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
+                device=DEVICE, use_choose_card2_chi=True
+            ),
+            SLBasedAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_7_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_5_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_3_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_3_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_3_0.0001_1024_1e-06.ckt",
+                device=DEVICE, use_choose_card2_chi=True
+            ),
+            SLBasedAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_7_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_5_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_3_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_3_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_3_0.0001_1024_1e-06.ckt",
+                device=DEVICE, use_choose_card2_chi=True
+            ),
+        ], 256, random_generator=random_generator).run()
     
 
 if __name__ == "__main__":
-    test_competition1()
-    test_competition2()
-    test_competition3()
-    test_competition4()
+    # test_competition1()
+    # test_competition2()
+    # test_competition3()
+    # test_competition4()
     test_competition5()
     test_competition6()
+    test_competition7()
