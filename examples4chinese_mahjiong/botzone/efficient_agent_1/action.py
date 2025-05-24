@@ -2,34 +2,39 @@ import random
 from collections import Counter
 
 
-def choose_hu(state: dict) -> bool:
+# ==========================================决定是否做动作==========================================
+def choose_hu(state):
     return True
 
 
-def choose_zi_mo_hu(state: dict) -> bool:
+def choose_zi_mo_hu(state):
     return True
 
 
-def choose_chi(state: dict, middle_card_ids: list[int]) -> bool:
+def choose_chi(state, middle_card_ids):
     return True
 
 
-def choose_peng(state: dict, card2peng_id: int) -> bool:
+def choose_peng(state, card2peng_id):
     return True
 
 
-def choose_gang(state: dict, card2gang_id: int) -> bool:
+def choose_gang(state, card2gang_id):
     return True
 
 
-def choose_an_gang(state: dict, gang_card_ids: list[int]) -> bool:
+def choose_an_gang(state, gang_card_ids):
     return True
 
 
-def choose_bu_gang(state: dict, gang_card_ids: list[int]) -> bool:
+def choose_bu_gang(state, gang_card_ids):
     return True
 
 
+# ================================================================================================
+
+
+# ==========================================决定动作的具体值=========================================
 def get_suit_and_num(card_id):
     if 0 <= card_id <= 8:
         return '万', card_id + 1
@@ -41,7 +46,7 @@ def get_suit_and_num(card_id):
         return '字', card_id
 
 
-def choose_card2play(state: dict) -> int:
+def choose_card2play(state):
     self_hand_card_ids = state["self_hand_card_ids"]
     counts = Counter(self_hand_card_ids)
     suit_groups = {'万': [], '条': [], '饼': []}
@@ -87,7 +92,7 @@ def choose_card2play(state: dict) -> int:
     return random.choice(candidates)
 
 
-def count_partner(hand_counter: Counter) -> int:
+def count_partner(hand_counter):
     """估算搭子数（顺子连张和对子）"""
     partner = 0
     for base in [0, 9, 18]:  # 万/条/饼
@@ -100,16 +105,16 @@ def count_partner(hand_counter: Counter) -> int:
                 tiles[i] -= 2
                 continue
             # 连张
-            if i <= 7 and tiles[i] >= 1 and tiles[i+1] >= 1:
+            if i <= 7 and tiles[i] >= 1 and tiles[i + 1] >= 1:
                 partner += 1
                 tiles[i] -= 1
-                tiles[i+1] -= 1
+                tiles[i + 1] -= 1
                 continue
             i += 1
     return partner
 
 
-def choose_card2chi(state: dict, middle_card_ids: list[int]) -> int:
+def choose_card2chi(state, middle_card_ids):
     self_hand_card_ids = state["self_hand_card_ids"]
     best_choice = middle_card_ids[0]
     max_partner = -1
@@ -139,9 +144,10 @@ def choose_card2chi(state: dict, middle_card_ids: list[int]) -> int:
     return best_choice
 
 
-def choose_card2an_gang(state: dict, gang_card_ids: list[int]) -> int:
+def choose_card2an_gang(state, gang_card_ids):
     return random.choice(gang_card_ids)
 
 
-def choose_card2bu_gang(state: dict, gang_card_ids: list[int]) -> int:
+def choose_card2bu_gang(state, gang_card_ids):
     return random.choice(gang_card_ids)
+# ================================================================================================

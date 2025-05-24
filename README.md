@@ -33,6 +33,15 @@ pip install -e .
 
 最后运行`examples/dnn/train.py`以训练不同的模型
 
+## 提交Botzone平台可以运行的智能体
+`examples4chinese_mahjiong/botzone`下有3个国标麻将bot，分别是随机出牌模型、基于牌效率的出牌模型和基于牌效率的出牌模型改进，将其压缩为zip，提交到Botzone平台（python 3.6），即可创建bot
+
+或者可以直接使用我们以及提交到平台上的Bot，其ID为`68322869c5819238f6613ca3`
+
+参考资料：[平台Bot交互介绍以及代码示例](https://wiki.botzone.org.cn/index.php?title=Bot#.E4.BA.A4.E4.BA.92)、[平台国标麻将交互api](https://wiki.botzone.org.cn/index.php?title=Chinese-Standard-Mahjong)
+
+ps：目前实现的Bot代码只经过少量对局检测，不能保证完全没有bug
+
 # 分析和对局结果解释
 `analysis_result.txt`是对botzone数据的分析结果
 
