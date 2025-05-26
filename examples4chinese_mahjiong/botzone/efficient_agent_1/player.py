@@ -309,23 +309,24 @@ def response():
                 data["players_played_card_ids"][current_player_id].append(played_card_id)
             elif current_player_action == "PENG":
                 # 其他人碰牌并打出牌
-                played_player_id, _, peng_card_id = data["last_observation"]
+                _, _, peng_card_id = data["last_observation"]
                 played_card_id = card_str2int(request_contents[3])
-                data["players_played_card_actions"][played_player_id].pop()
-                data["players_played_card_ids"][played_player_id].pop()
+                data["players_played_card_actions"][last_player_id].pop()
+                data["players_played_card_ids"][last_player_id].pop()
                 data["last_observation"] = (current_player_id, "Play", played_card_id)
                 data["players_melds"][current_player_id].append(("Peng", last_player_id, peng_card_id))
                 data["players_played_card_actions"][current_player_id].append("Peng")
+                data["players_played_card_ids"][current_player_id].append(played_card_id)
             else:
                 # 其他人吃牌并打出牌
-                played_player_id = data["last_observation"][0]
                 chi_middle_card_id = card_str2int(request_contents[3])
                 played_card_id = card_str2int(request_contents[4])
-                data["players_played_card_actions"][played_player_id].pop()
-                data["players_played_card_ids"][played_player_id].pop()
+                data["players_played_card_actions"][last_player_id].pop()
+                data["players_played_card_ids"][last_player_id].pop()
                 data["last_observation"] = (current_player_id, "Play", played_card_id)
                 data["players_melds"][current_player_id].append(("Chi", last_player_id, chi_middle_card_id))
                 data["players_played_card_actions"][current_player_id].append("Chi")
+                data["players_played_card_ids"][current_player_id].append(played_card_id)
             state["last_observation"] = data["last_observation"]
             state["players_melds"] = data["players_melds"]
             state["players_played_card_ids"] = data["players_played_card_ids"]
@@ -419,12 +420,14 @@ def response_self_draw(state):
     card_ids2an_gang = check_an_gang(state)
     if (len(card_ids2an_gang) > 0) and (num_draw[self_player_id] < 34) and choose_an_gang(state, card_ids2an_gang):
         card_id2an_gang = choose_card2an_gang(state, card_ids2an_gang)
-        return f"GANG {card_int2str(card_id2an_gang)}"
+        if card_id2an_gang >= 0:
+            return f"GANG {card_int2str(card_id2an_gang)}"
 
     card_ids2bu_gang = check_bu_gang(state)
     if (len(card_ids2bu_gang) > 0) and (num_draw[self_player_id] < 34) and choose_bu_gang(state, card_ids2bu_gang):
         card_id2bu_gang = choose_card2bu_gang(state, card_ids2bu_gang)
-        return f"BUGANG {card_int2str(card_id2bu_gang)}"
+        if card_id2bu_gang >= 0:
+            return f"BUGANG {card_int2str(card_id2bu_gang)}"
 
     card_id2play = choose_card2play(state)
     return f"PLAY {card_int2str(card_id2play)}"
