@@ -1,6 +1,6 @@
 import random
 import torch
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 from model import load_model
 
@@ -158,68 +158,137 @@ def choose_zi_mo_hu(state):
 
 
 def choose_chi(state, middle_card_ids):
-    features = get_common_features(state["self_hand_card_ids"], state)
-    features.extend(feature_last_action(state))
-    features = torch.tensor([features]).float().to(DEVICE)
-    return CHI_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    try:
+        # todo: 有bug，RuntimeError: Given groups=1, weight of size [256, 28, 3], expected input[1, 29, 35] to have 28 channels, but got 29 channels instead
+        features = get_common_features(state["self_hand_card_ids"], state)
+        features.extend(feature_last_action(state))
+        features = torch.tensor([features]).float().to(DEVICE)
+        return CHI_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    except:
+        return True
 
 
 def choose_peng(state, card2peng_id):
-    features = get_common_features(state["self_hand_card_ids"], state)
-    features.extend(feature_last_action(state))
-    features = torch.tensor([features]).float().to(DEVICE)
-    return PENG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    try:
+        features = get_common_features(state["self_hand_card_ids"], state)
+        features.extend(feature_last_action(state))
+        features = torch.tensor([features]).float().to(DEVICE)
+        return PENG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    except:
+        return True
 
 
 def choose_gang(state, card2gang_id):
-    features = get_common_features(state["self_hand_card_ids"], state)
-    features.extend(feature_last_action(state))
-    features = torch.tensor([features]).float().to(DEVICE)
-    return GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    try:
+        features = get_common_features(state["self_hand_card_ids"], state)
+        features.extend(feature_last_action(state))
+        features = torch.tensor([features]).float().to(DEVICE)
+        return GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    except:
+        return True
 
 
 def choose_an_gang(state, gang_card_ids):
-    return True
-    # todo: 有bug
-    # RuntimeError: Expected 3-dimensional input for 3-dimensional weight[256, 28, 3], but got 2-dimensional input of size [28, 35] instead
-    # features = get_common_features(state["self_hand_card_ids"], state)
-    # card2gang_features = [0] * 35
-    # for card_id in gang_card_ids:
-    #     card2gang_features[card_id] = 1
-    # features.append(card2gang_features)
-    # features = torch.tensor(features).float().to(DEVICE)
-    # return AN_GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    # todo: 有bug, RuntimeError: Expected 3-dimensional input for 3-dimensional weight[256, 28, 3], but got 2-dimensional input of size [28, 35] instead
+    try:
+        features = get_common_features(state["self_hand_card_ids"], state)
+        card2gang_features = [0] * 35
+        for card_id in gang_card_ids:
+            card2gang_features[card_id] = 1
+        features.append(card2gang_features)
+        features = torch.tensor(features).float().to(DEVICE)
+        return AN_GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    except:
+        return True
 
 
 def choose_bu_gang(state, gang_card_ids):
-    return True
     # todo: 估计也有bug，但是还没测试到
-    # features = get_common_features(state["self_hand_card_ids"], state)
-    # card2gang_features: list[int] = [0] * 35
-    # for card_id in gang_card_ids:
-    #     card2gang_features[card_id] = 1
-    # features.append(card2gang_features)
-    # features = torch.tensor(features).float().to(DEVICE)
-    # return BU_GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    try:
+        features = get_common_features(state["self_hand_card_ids"], state)
+        card2gang_features: list[int] = [0] * 35
+        for card_id in gang_card_ids:
+            card2gang_features[card_id] = 1
+        features.append(card2gang_features)
+        features = torch.tensor(features).float().to(DEVICE)
+        return BU_GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+    except:
+        return True
 
 
 # ================================================================================================
 
 
 # ==========================================决定动作的具体值=========================================
+def get_suit_and_num(card_id):
+    if 0 <= card_id <= 8:
+        return '万', card_id + 1
+    elif 9 <= card_id <= 17:
+        return '条', card_id - 8
+    elif 18 <= card_id <= 26:
+        return '饼', card_id - 17
+    else:
+        return '字', card_id
+
+
 def choose_card2play(state):
-    self_hand_card_ids = state["self_hand_card_ids"]
-    features = get_common_features(self_hand_card_ids, state)
-    features.extend(feature_last_action(state))
-    features = torch.tensor([features]).float().to(DEVICE)
-    model_output: torch.Tensor = PLAY_MODEL(features)
-    card2play_ids = torch.sort(model_output[0, :-1], descending=True)[1].tolist()
-    i = 0
-    card2play_id = card2play_ids[i]
-    while card2play_id not in self_hand_card_ids:
-        i += 1
+    try:
+        self_hand_card_ids = state["self_hand_card_ids"]
+        features = get_common_features(self_hand_card_ids, state)
+        features.extend(feature_last_action(state))
+        features = torch.tensor([features]).float().to(DEVICE)
+        model_output: torch.Tensor = PLAY_MODEL(features)
+        card2play_ids = torch.sort(model_output[0, :-1], descending=True)[1].tolist()
+        i = 0
         card2play_id = card2play_ids[i]
-    return card2play_id
+        while card2play_id not in self_hand_card_ids:
+            i += 1
+            card2play_id = card2play_ids[i]
+        return card2play_id
+    except:
+        self_hand_card_ids = state["self_hand_card_ids"]
+        counts = Counter(self_hand_card_ids)
+        suit_groups = {'万': [], '条': [], '饼': []}
+        for c in self_hand_card_ids:
+            s, n = get_suit_and_num(c)
+            if s in suit_groups:
+                suit_groups[s].append(n)
+
+        min_value = float('inf')
+        candidates = []
+        for card_id in self_hand_card_ids:
+            s, num = get_suit_and_num(card_id)
+            if s in suit_groups:  # 数牌
+                suit_nums = suit_groups[s]
+                left = (num - 1) in suit_nums
+                right = (num + 1) in suit_nums
+                # 基础分
+                if num in (1, 9):
+                    value = 0
+                elif num in (2, 8):
+                    value = 1
+                else:
+                    value = 2
+                # 对子/刻子加分
+                current_count = counts[card_id]
+                if current_count >= 2:
+                    value += 2 * (current_count - 1)
+                # 相邻加分
+                if left:
+                    value += 1
+                if right:
+                    value += 1
+            else:  # 字牌
+                current_count = counts[card_id]
+                value = current_count
+
+            if value < min_value:
+                min_value = value
+                candidates = [card_id]
+            elif value == min_value:
+                candidates.append(card_id)
+
+        return random.choice(candidates)
 
 
 def choose_card2chi(state, middle_card_ids):

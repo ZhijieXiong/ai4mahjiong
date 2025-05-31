@@ -1,11 +1,12 @@
 import json
 import sys
-from collections import Counter
+from copy import deepcopy
 from MahjongGB import MahjongFanCalculator
 
 from action import *
 
 
+# todo: 算番有点问题，目前出现他人点炮但是不满8番却选择胡牌
 def check_zi_mo_hu(state):
     self_hand_card_ids = state["self_hand_card_ids"]
     self_player_id = state["self_player_id"]
@@ -27,7 +28,10 @@ def check_zi_mo_hu(state):
                         card_int2str(meld_card_id),
                         (self_player_id - meld_player_id + 4) % 4)
         pack.append(claiming)
-    hand = tuple(map(card_int2str, self_hand_card_ids))
+    # hand不应该计算摸上来那张牌
+    self_hand_card_ids_ = deepcopy(self_hand_card_ids)
+    self_hand_card_ids_.remove(last_action_card_id)
+    hand = tuple(map(card_int2str, self_hand_card_ids_))
     winTile = card_int2str(last_action_card_id)
     flowerCount = 0
     isSelfDrawn = True
@@ -52,7 +56,7 @@ def check_zi_mo_hu(state):
     verbose = False
 
     try:
-        result = MahjongFanCalculator(pack, hand, winTile, flowerCount, isSelfDrawn, is4thTile,
+        result = MahjongFanCalculator(tuple(pack), hand, winTile, flowerCount, isSelfDrawn, is4thTile,
                                       isAboutKong, isWallLast, seatWind, prevalentWind, verbose)
         fan_count = sum([res[0] for res in result])
         return result if fan_count >= 8 else []
@@ -86,7 +90,6 @@ def check_hu(state):
     winTile = card_int2str(last_action_card_id)
     flowerCount = 0
     isSelfDrawn = False
-
     played_card_ids = Counter(
         [card_id for player_played_card_ids in players_played_card_ids for card_id in player_played_card_ids])
     for i in range(4):

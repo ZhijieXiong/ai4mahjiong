@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from MahjongGB import MahjongFanCalculator
 
 from action import *
@@ -25,7 +26,10 @@ def check_zi_mo_hu(state):
                         card_int2str(meld_card_id),
                         (self_player_id - meld_player_id + 4) % 4)
         pack.append(claiming)
-    hand = tuple(map(card_int2str, self_hand_card_ids))
+    # hand不应该计算摸上来那张牌
+    self_hand_card_ids_ = deepcopy(self_hand_card_ids)
+    self_hand_card_ids_.remove(last_action_card_id)
+    hand = tuple(map(card_int2str, self_hand_card_ids_))
     winTile = card_int2str(last_action_card_id)
     flowerCount = 0
     isSelfDrawn = True
@@ -50,7 +54,7 @@ def check_zi_mo_hu(state):
     verbose = False
 
     try:
-        result = MahjongFanCalculator(pack, hand, winTile, flowerCount, isSelfDrawn, is4thTile,
+        result = MahjongFanCalculator(tuple(pack), hand, winTile, flowerCount, isSelfDrawn, is4thTile,
                                       isAboutKong, isWallLast, seatWind, prevalentWind, verbose)
         fan_count = sum([res[0] for res in result])
         return result if fan_count >= 8 else []
