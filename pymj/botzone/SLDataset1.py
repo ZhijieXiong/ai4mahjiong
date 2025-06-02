@@ -135,7 +135,7 @@ class SLDataset(Dataset):
         i_players_open_melds = []
         for player_open_melds in players_open_melds:
             i_player_open_melds = []
-            for meld_type, meld_card_id in player_open_melds:
+            for meld_type, _, meld_card_id in player_open_melds:
                 i_player_open_meld = [0] * 35
                 i_player_open_meld[34] = SLDataset.MELD_TYPE[meld_type]
                 if meld_type != "AnGang":

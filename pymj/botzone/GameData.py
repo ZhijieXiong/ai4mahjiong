@@ -214,7 +214,7 @@ class GameData:
                                 can_an_gang = True
                                 tiles_can_an_gang.append(self_tile)
                         open_melds = players_open_melds[action_player_id]
-                        for open_meld_type, open_meld_tile in open_melds:
+                        for open_meld_type, _, open_meld_tile in open_melds:
                             if open_meld_type == "Peng" and self_tiles[open_meld_tile] >= 1:
                                 can_bu_gang = True
                                 tiles_can_bu_gang.append(open_meld_tile)

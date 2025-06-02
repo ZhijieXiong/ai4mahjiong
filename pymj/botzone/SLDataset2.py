@@ -1,12 +1,14 @@
 import torch
-import numpy as np
-from torch.utils.data import IterableDataset, get_worker_info
+from torch.utils.data import Dataset
+from MahjongGB import MahjongShanten
 
 from pymj.botzone.action import *
 from pymj.botzone.GameData import GameData
+from pymj.game.chinese_ofiicial_mahjiong.Card import Card
+from pymj.agent.chinese_official_mahjiong.DQNAgent import Network
 
 
-class SLDataset(IterableDataset):
+class SLDataset(Dataset):
     ALL_TILES = {i: 4 for i in range(34)}
     DRAW_SOURCE = {
         Play: 0,
@@ -70,279 +72,196 @@ class SLDataset(IterableDataset):
                         "616177bf5ddc087351c2ef54.txt", "6161954f5ddc087351c34d3f.txt", "6162afa05ddc087351c6943d.txt",
                         "616367f15ddc087351c7f9e3.txt", "616041265ddc087351c085c2.txt"]
 
-    def __init__(self, original_data_dir, save_data_dir, mode, max_discard_length=24, device="cpu"):
+    def __init__(self, data_path, device="cpu", data_transformers=None):
         super().__init__()
-        self.save_data_dir = save_data_dir
-        self.mode = mode
-        self.max_discard_length = max_discard_length
         self.device = device
+        self.data_transformers = data_transformers
+        data = torch.load(data_path, weights_only=True)
+        self.features = data["features"].to(self.device)
+        self.labels = data["labels"].to(self.device)
+
+    def __len__(self):
+        return self.features.shape[0]
+
+    def __getitem__(self, item):
+        return self.features[item].to_dense().float(), self.labels[item]
+
+    @staticmethod
+    def save_data(original_data_dir, mode, save_data_dir, num_game=10):
+        assert mode in ["Chi", "Peng", "Gang", "Play"]
         data_path_names = os.listdir(original_data_dir)
-        self.game_data_paths = []
+        all_mlp_features = []
+        all_cnn_features = []
+        all_rnn_features = []
+        all_labels = []
+        all_weights = []
+        all_gang_mask = []
+        n = 0
+        if num_game <= 0:
+            num_game = len(data_path_names)
         for data_path_name in data_path_names:
+            if n >= num_game:
+                break
             if ".txt" in data_path_name and data_path_name not in SLDataset.EXCLUDE_HAND_IDS:
-                p = os.path.join(original_data_dir, data_path_name)
-                self.game_data_paths.append(p)
-
-    def save_data(self):
-        worker_info = get_worker_info()
-        if worker_info is None:
-            # 单线程：全部读取
-            iter_start = 0
-            iter_end = len(self.game_data_paths)
-        else:
-            # 多线程：分配区间
-            per_worker = int(len(self.game_data_paths) / worker_info.num_workers)
-            worker_id = worker_info.id
-            iter_start = worker_id * per_worker
-            iter_end = iter_start + per_worker
-
-        for i in range(iter_start, iter_end):
-            data_path = self.game_data_paths[i]
-            hand_data = GameData.read_one_game(data_path)
-            state_sequences, action_sequences = hand_data.get_state_action_sequence()
-            for player_id in range(4):
-                state_sequence = state_sequences[player_id]
-                action_sequence = action_sequences[player_id]
-                if self.mode == "Discard":
-                    yield from self.parse_state_action4discard(state_sequence, action_sequence, hand_data.wind,
-                                                               player_id, player_id)
-                elif self.mode in ["Chi", "Peng", "Gang"]:
-                    yield from self.parse_state_action4open_meld(state_sequence, action_sequence, hand_data.wind,
-                                                                 player_id)
-                elif self.mode in ["AnGang", "BuGang"]:
-                    yield from self.parse_state_action4self_gang(state_sequence, action_sequence, hand_data.wind,
-                                                                 player_id)
+                data_path = os.path.join(original_data_dir, data_path_name)
+                hand_data = GameData.read_one_game(data_path)
+                state_sequences, action_sequences = hand_data.get_state_action_sequence()
+                min_seq_len = min(list(map(len, state_sequences)))
+                if min_seq_len < 3:
+                    # 太短的对局不要
+                    continue
+                player_weight = []
+                for i, (state_sequence, action_sequence) in enumerate(zip(state_sequences, action_sequences)):
+                    last_state = state_sequence[-1]
+                    last_action = action_sequence[-1]
+                    if not isinstance(last_action, (Hu, ZiMoHu)):
+                        self_tiles = []
+                        for card_id, card_num in last_state["self_tiles"].items():
+                            for _ in range(card_num):
+                                self_tiles.append(card_id)
+                        open_melds = last_state["players_open_melds"][i]
+                        pack = []
+                        for meld_type, meld_player_id, meld_card_id in open_melds:
+                            if meld_type == "Chi":
+                                claiming = (meld_type.upper(), Card.decoding(meld_card_id), 1)
+                            else:
+                                claiming = (meld_type.replace("Bu", "").replace("An", "").upper(),
+                                            Card.decoding(meld_card_id),
+                                            (i - meld_player_id + 4) % 4)
+                            pack.append(claiming)
+                        hand = tuple(map(Card.decoding, self_tiles))
+                        shanten = MahjongShanten(tuple(pack), hand)
+                        player_weight.append(1 - (shanten + 1) / 10)
+                        continue
+                    else:
+                        # 给更高的权重
+                        player_weight.append(1.0)
+                for player_id in range(4):
+                    state_sequence = state_sequences[player_id]
+                    action_sequence = action_sequences[player_id]
+                    if mode in ["Chi", "Peng", "Gang"]:
+                        states, actions = SLDataset.filter_open_meld_data(state_sequence, action_sequence, mode)
+                    else:
+                        states, actions = SLDataset.filter_play_data(state_sequence, action_sequence)
+                    for state, action in zip(states, actions):
+                        all_weights.append(player_weight[player_id])
+                        self_player_id = player_id
+                        self_wind = player_id
+                        game_wind = hand_data.wind
+                        if mode == "Play":
+                            self_tiles = state["state4discard"]["self_tiles"]
+                            players_melds = state["state4discard"]["players_open_melds"]
+                        else:
+                            self_tiles = state["self_tiles"]
+                            players_melds = state["players_open_melds"]
+                        self_hand_card_ids = []
+                        for card_id, card_num in self_tiles.items():
+                            for _ in range(card_num):
+                                self_hand_card_ids.append(card_id)
+                        players_played_card_ids = []
+                        for player_played_card_ids in state["players_discarded_tiles"]:
+                            players_played_card_ids.append(
+                                list(map(lambda x: x[1], player_played_card_ids))
+                            )
+                        wind_features = Network.feature_wind(self_wind, game_wind)
+                        self_hand_card_features4mlp, features4cnn = Network.feature_self_cards(
+                            self_hand_card_ids)
+                        self_played_card_features4mlp, self_played_card_features4rnn, self_seq_len = (
+                            Network.feature_played_cards(players_played_card_ids[self_player_id], 21))
+                        self_melds_features = Network.feature_melds(players_melds[self_player_id])
+                        other_played_card_ids = []
+                        for i in range(4):
+                            if i != self_player_id:
+                                other_played_card_ids.extend(players_played_card_ids[i])
+                        other_played_card_features4mlp, _, _ = Network.feature_played_cards(
+                            other_played_card_ids, 21
+                        )
+                        left_player_id = (self_player_id - 1) if (self_player_id > 0) else 3
+                        right_player_id = (self_player_id + 1) if (self_player_id < 3) else 0
+                        across_player_id = (self_player_id + 2) if (self_player_id < 2) else (self_player_id - 2)
+                        _, left_played_card_features4rnn, left_seq_len = (
+                            Network.feature_played_cards(players_played_card_ids[left_player_id], 21))
+                        _, right_played_card_features4rnn, right_seq_len = (
+                            Network.feature_played_cards(players_played_card_ids[right_player_id], 21))
+                        _, across_played_card_features4rnn, across_seq_len = (
+                            Network.feature_played_cards(players_played_card_ids[across_player_id], 21))
+                        remain_card_features = Network.feature_remain_cards(
+                            self_player_id, self_hand_card_ids, tuple(players_played_card_ids), players_melds)
+                        left_melds_features = Network.feature_melds(players_melds[left_player_id])
+                        right_melds_features = Network.feature_melds(players_melds[right_player_id])
+                        across_melds_features = Network.feature_melds(players_melds[across_player_id])
+                        features4mlp = torch.cat(
+                            (wind_features, self_hand_card_features4mlp, self_played_card_features4mlp,
+                             self_melds_features, other_played_card_features4mlp, left_melds_features,
+                             right_melds_features, across_melds_features, remain_card_features), dim=0
+                        ).unsqueeze(dim=0)
+                        features4rnn = torch.cat((
+                            self_played_card_features4rnn.unsqueeze(dim=0),
+                            left_played_card_features4rnn.unsqueeze(dim=0),
+                            right_played_card_features4rnn.unsqueeze(dim=0),
+                            across_played_card_features4rnn.unsqueeze(dim=0)
+                        ), dim=0).unsqueeze(dim=0)
+                        features4cnn = features4cnn.unsqueeze(dim=0)
+                        all_mlp_features.append(features4mlp)
+                        all_cnn_features.append(features4cnn)
+                        all_rnn_features.append(features4rnn)
+                        if mode == "Play":
+                            all_labels.append(action.tile_out)
+                        elif mode == "Gang":
+                            if state["can_an_gang"]:
+                                all_gang_mask.append(torch.tensor([1, 0, 0, 1]).bool().unsqueeze(dim=0))
+                            elif state["can_bu_gang"]:
+                                all_gang_mask.append(torch.tensor([0, 1, 0, 1]).bool().unsqueeze(dim=0))
+                            else:
+                                all_gang_mask.append(torch.tensor([0, 0, 1, 1]).bool().unsqueeze(dim=0))
+                            if isinstance(action, AnGang):
+                                all_labels.append(0)
+                            elif isinstance(action, BuGang):
+                                all_labels.append(1)
+                            elif isinstance(action, Gang):
+                                all_labels.append(2)
+                            else:
+                                all_labels.append(3)
+                        else:
+                            all_labels.append(int(action != "Pass"))
+            n += 1
+        all_data = {
+            "mlp_features": torch.cat(all_mlp_features, dim=0),  # (n, 288, )
+            "cnn_features": torch.cat(all_cnn_features, dim=0),  # (n, 4, 34)
+            "rnn_features": torch.cat(all_rnn_features, dim=0),  # (n, 4, 21)
+            "labels": torch.tensor(all_labels).long(),  # (n, )
+            "weights": torch.tensor(all_weights).float(),  # (n, )
+        }
+        if mode == "Gang":
+            all_data["mask"] = torch.cat(all_gang_mask, dim=0)  # (n, 4)
+        torch.save(all_data, os.path.join(save_data_dir, f"{mode}.pt"))
 
     @staticmethod
-    def feature_self_tiles(self_tiles):
-        # 手牌, 4 * 34
-        self_tiles_feature = np.zeros((4, 34), dtype=np.float32)
-        for tile_int, tile_num in self_tiles.items():
-            for i in range(tile_num):
-                self_tiles_feature[i][tile_int] = 1
-        return self_tiles_feature
-
-    @staticmethod
-    def feature_discard(players_discarded_tiles, max_discard_length):
-        # 四家舍牌, 4 * max_discard_length * 34
-        discard_feature = []
-        for played_tiles in players_discarded_tiles:
-            played_tiles_feature_i = [[0] * 34 for _ in range(max_discard_length)]
-            for i, (_, played_tile) in enumerate(played_tiles):
-                played_tiles_feature_i[i][played_tile] = 1
-            discard_feature.extend(played_tiles_feature_i)
-        return np.array(discard_feature, dtype=np.float32)
-
-    @staticmethod
-    def feature_open_meld(players_open_melds):
-        open_meld_feature = []
-        for open_melds in players_open_melds:
-            # 5种副露，吃、碰、杠、补杠、暗杠
-            open_meld_feature_i = [[0] * 34 for _ in range(20)]
-            for n, (open_meld_type, open_meld_tile) in enumerate(open_melds):
-                if open_meld_type == "Chi":
-                    k = n
-                elif open_meld_type == "Peng":
-                    k = 4 + n
-                elif open_meld_type == "Gang":
-                    k = 8 + n
-                elif open_meld_type == "BuGang":
-                    k = 12 + n
-                else:
-                    k = 16 + n
-                open_meld_feature_i[k][open_meld_tile] = 1
-            open_meld_feature.extend(open_meld_feature_i)
-        return np.array(open_meld_feature, dtype=np.float32)
-
-    @staticmethod
-    def feature_remain_tiles(self_tiles, players_open_melds, players_discarded_tiles):
-        remain_tiles_feature = np.ones((4, 34), dtype=np.float32)
-        exist_tiles = {i: 0 for i in range(34)}
-        for open_melds in players_open_melds:
-            for _, (open_meld_type, open_meld_tile) in enumerate(open_melds):
-                if open_meld_type == "Chi":
-                    chi_tiles = (open_meld_tile - 1, open_meld_tile, open_meld_tile + 1)
-                    for chi_tile in chi_tiles:
-                        remain_tiles_feature[exist_tiles[chi_tile]][chi_tile] = 0
-                        exist_tiles[chi_tile] += 1
-                else:
-                    for i in range(3):
-                        remain_tiles_feature[i][open_meld_tile] = 0
-                    if open_meld_type == "Peng":
-                        exist_tiles[open_meld_tile] += 3
-        for played_tiles in players_discarded_tiles:
-            for _, played_tile in played_tiles:
-                num_exist = exist_tiles[played_tile]
-                remain_tiles_feature[num_exist - 1][played_tile] = 0
-                exist_tiles[played_tile] += 1
-        for tile_int, tile_num in self_tiles.items():
-            num_exist = exist_tiles[tile_int] + tile_num
-            if num_exist < 4:
-                # 如果碰的牌是绝张，或者是杠，会重复计算手牌和碰｜杠的牌
-                remain_tiles_feature[num_exist - 1][tile_int] = 0
-        return np.array(remain_tiles_feature, dtype=np.float32)
-
-    @staticmethod
-    def feature_wind(QF, MF):
-        wind_feature = np.zeros((8, 34), dtype=np.float32)
-        wind_feature[0 + QF, :] = 1
-        wind_feature[4 + MF, :] = 1
-        return wind_feature
-
-    def parse_state_action4discard(self, state_sequences, action_sequences, QF, MF, player_id):
-        # 弃牌模型
-        for state, action in zip(state_sequences, action_sequences):
+    def filter_play_data(state_sequence, action_sequence):
+        filtered_states = []
+        filtered_actions = []
+        for state, action in zip(state_sequence, action_sequence):
             state4discard = state["state4discard"]
             if state4discard is None:
                 continue
             if isinstance(action, (Play, Chi, Peng, Gang, AnGang, BuGang)):
-                last_action = state["last_action"]
-                self_tiles = state["state4discard"]["self_tiles"]
-                players_open_melds = state["state4discard"]["players_open_melds"]
-                players_discarded_tiles = state["players_discarded_tiles"]
-                # 手牌, 4 * 34
-                self_tiles_feature = self.feature_self_tiles(self_tiles)
-                # 四家舍牌, 4 * max_discard_length * 34
-                discard_feature = self.feature_discard(players_discarded_tiles, self.max_discard_length)
-                # 四家副露, 80 * 34
-                open_meld_feature = self.feature_open_meld(players_open_melds)
-                # 剩余可能牌, 4 * 34
-                remain_tiles_feature = self.feature_remain_tiles(
-                    self_tiles, players_open_melds, players_discarded_tiles)
-                # 自风、场风, 8 * 34
-                wind_feature = self.feature_wind(QF, MF)
-                # 检查是否有错误
-                num_self_tile = self_tiles_feature.sum()
-                num_open_meld = len(players_open_melds[player_id])
-                assert num_self_tile == (14 - num_open_meld * 3), \
-                    f"对于弃牌模型，手牌必须是14-n*3张，其中n为已有副露数量，此时手牌数为{num_self_tile}，副露数为{num_open_meld}"
-                assert action.tile_out < 34, f"弃牌模型的输出必须小于34"
-                # 摸牌来源：Play, Chi, Peng, Gang, AnGang, BuGang
-                draw_tile_source_feature = np.zeros((6, 34), dtype=np.float32)
-                if last_action is not None:
-                    draw_tile_source_feature[SLDataset.DRAW_SOURCE[type(last_action)], :] = 1
-                feature = np.concatenate((
-                    self_tiles_feature,
-                    open_meld_feature,
-                    discard_feature,
-                    remain_tiles_feature,
-                    wind_feature,
-                    draw_tile_source_feature,
-                ), axis=0)
-                # value in [0, 1, 2, ..., 33]
-                label = action.tile_out
-                yield torch.from_numpy(feature).to(self.device), torch.tensor(label).to(self.device)
+                filtered_states.append(state)
+                filtered_actions.append(action)
+        return filtered_states, filtered_actions
 
-    def parse_state_action4open_meld(self, state_sequences, action_sequences, QF, MF):
-        # 吃碰杠模型
-        for state, action in zip(state_sequences, action_sequences):
-            if self.mode == "Chi":
+    @staticmethod
+    def filter_open_meld_data(state_sequence, action_sequence, mode):
+        filtered_states = []
+        filtered_actions = []
+        for state, action in zip(state_sequence, action_sequence):
+            if mode == "Chi":
                 can_open_meld = state["can_chi"]
-            elif self.mode == "Peng":
+            elif mode == "Peng":
                 can_open_meld = state["can_peng"]
             else:
-                can_open_meld = state["can_gang"]
+                can_open_meld = state["can_gang"] or state["can_bu_gang"] or state["can_an_gang"]
             last_action = state["last_action"]
             if can_open_meld and last_action is not None:
-                last_tile = last_action.tile_out
-                self_tiles = state["self_tiles"]
-                players_open_melds = state["players_open_melds"]
-                players_discarded_tiles = state["players_discarded_tiles"]
-                # 手牌, 4 * 34
-                self_tiles_feature = self.feature_self_tiles(self_tiles)
-                # 四家舍牌, 4 * max_discard_length * 34
-                discard_feature = self.feature_discard(players_discarded_tiles, self.max_discard_length)
-                # 四家副露, 80 * 34
-                open_meld_feature = self.feature_open_meld(players_open_melds)
-                # 剩余可能牌, 4 * 34
-                remain_tiles_feature = self.feature_remain_tiles(
-                    self_tiles, players_open_melds, players_discarded_tiles)
-                # 自风、场风, 8 * 34
-                wind_feature = self.feature_wind(QF, MF)
-                # 其它玩家打出的牌
-                last_tile_feature = np.zeros((1, 34), dtype=np.float32)
-                last_tile_feature[0, last_tile] = 1
-                # 摸牌来源：Play, Chi, Peng, Gang, AnGang, BuGang
-                draw_tile_source_feature = np.zeros((6, 34), dtype=np.float32)
-                if last_action is not None:
-                    draw_tile_source_feature[SLDataset.DRAW_SOURCE[type(last_action)], :] = 1
-                feature = np.concatenate((
-                    self_tiles_feature,
-                    open_meld_feature,
-                    discard_feature,
-                    remain_tiles_feature,
-                    wind_feature,
-                    draw_tile_source_feature,
-                    last_tile_feature
-                ), axis=0)
-                if action == "Pass":
-                    label = 0
-                else:
-                    label = 1
-                yield torch.from_numpy(feature).to(self.device), torch.tensor(label).to(self.device)
-
-    def parse_state_action4self_gang(self, state_sequences, action_sequences, QF, MF):
-        # 暗杠补杠模型
-        for state, action in zip(state_sequences, action_sequences):
-            can_open_meld = state["can_bu_gang"] if self.mode == "BuGang" else state["can_an_gang"]
-            last_action = state["last_action"]
-            if can_open_meld:
-                tiles_can_gang = state["tiles_can_bu_gang"] if self.mode == "BuGang" else state["tiles_can_an_gang"]
-                self_tiles = state["self_tiles"]
-                players_open_melds = state["players_open_melds"]
-                players_discarded_tiles = state["players_discarded_tiles"]
-                # 手牌, 4 * 34
-                self_tiles_feature = self.feature_self_tiles(self_tiles)
-                # 四家舍牌, 4 * max_discard_length * 34
-                discard_feature = self.feature_discard(players_discarded_tiles, self.max_discard_length)
-                # 四家副露, 80 * 34
-                open_meld_feature = self.feature_open_meld(players_open_melds)
-                # 剩余可能牌, 4 * 34
-                remain_tiles_feature = self.feature_remain_tiles(
-                    self_tiles, players_open_melds, players_discarded_tiles)
-                # 自风、场风, 8 * 34
-                wind_feature = self.feature_wind(QF, MF)
-                # 可以杠的牌
-                tiles_can_gang_feature = np.zeros((1, 34), dtype=np.float32)
-                for tile_can_gang in tiles_can_gang:
-                    tiles_can_gang_feature[0, tile_can_gang] = 1
-                feature = np.concatenate((
-                    self_tiles_feature,
-                    open_meld_feature,
-                    discard_feature,
-                    remain_tiles_feature,
-                    wind_feature,
-                    tiles_can_gang_feature,
-                ), axis=0)
-                if self.mode == "AnGang":
-                    label = int(isinstance(action, AnGang))
-                else:
-                    label = int(isinstance(action, BuGang))
-                yield torch.from_numpy(feature).to(self.device), torch.tensor(label).to(self.device)
-
-    def __iter__(self):
-        worker_info = get_worker_info()
-        if worker_info is None:
-            # 单线程：全部读取
-            iter_start = 0
-            iter_end = len(self.game_data_paths)
-        else:
-            # 多线程：分配区间
-            per_worker = int(len(self.game_data_paths) / worker_info.num_workers)
-            worker_id = worker_info.id
-            iter_start = worker_id * per_worker
-            iter_end = iter_start + per_worker
-
-        for i in range(iter_start, iter_end):
-            data_path = self.game_data_paths[i]
-            hand_data = GameData.read_one_game(data_path)
-            state_sequences, action_sequences = hand_data.get_state_action_sequence()
-            for player_id in range(4):
-                state_sequence = state_sequences[player_id]
-                action_sequence = action_sequences[player_id]
-                if self.mode == "Discard":
-                    yield from self.parse_state_action4discard(state_sequence, action_sequence, hand_data.wind, player_id, player_id)
-                elif self.mode in ["Chi", "Peng", "Gang"]:
-                    yield from self.parse_state_action4open_meld(state_sequence, action_sequence, hand_data.wind, player_id)
-                elif self.mode in ["AnGang", "BuGang"]:
-                    yield from self.parse_state_action4self_gang(state_sequence, action_sequence, hand_data.wind, player_id)
+                filtered_states.append(state)
+                filtered_actions.append(action)
+        return filtered_states, filtered_actions

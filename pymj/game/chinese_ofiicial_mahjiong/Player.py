@@ -1,4 +1,5 @@
 from collections import Counter
+from copy import deepcopy
 from MahjongGB import MahjongFanCalculator
 
 from pymj.game.chinese_ofiicial_mahjiong.Card import Card
@@ -33,7 +34,10 @@ class Player:
                             Card.decoding(meld_card_id),
                             (self.id - meld_player_id + 4) % 4)
             pack.append(claiming)
-        hand: tuple[str, ...] = tuple(map(Card.decoding, self.hand_card_ids))
+        # hand不应该计算摸上来那张牌
+        self_hand_card_ids = deepcopy(self.hand_card_ids)
+        self_hand_card_ids.remove(last_action_card_id)
+        hand: tuple[str, ...] = tuple(map(Card.decoding, self_hand_card_ids))
         winTile: str = Card.decoding(last_action_card_id)
         flowerCount: int = 0
         isSelfDrawn: bool = True
@@ -56,7 +60,7 @@ class Player:
         verbose: bool = False
 
         try:
-            result = MahjongFanCalculator(pack, hand, winTile, flowerCount, isSelfDrawn, is4thTile,
+            result = MahjongFanCalculator(tuple(pack), hand, winTile, flowerCount, isSelfDrawn, is4thTile,
                                           isAboutKong, isWallLast, seatWind, prevalentWind, verbose)
             fan_count: int = sum([res[0] for res in result])
             return result if fan_count >= 8 else []

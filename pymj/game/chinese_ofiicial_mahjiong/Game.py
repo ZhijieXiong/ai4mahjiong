@@ -276,3 +276,28 @@ class Game:
                     idx: int = self.game_result[0].index(nearest_player_id)
                     print(f"Player {nearest_player_id} Hu {Card.decoding(last_card_id)}")
                     print(self.game_result[1][idx])
+
+    def get_game_data(self) -> list[str]:
+        data = [f"Wind {self.game_wind}"]
+        for i in range(4):
+            hand_cards_str: str = " ".join(list(map(Card.decoding, self.initial_players_card_ids[i])))
+            data.append(f"Player {i} Deal " + hand_cards_str)
+        for player_id, action_type, card_id in self.history:
+            data.append(f"Player {player_id} {action_type} {Card.decoding(card_id)}")
+        if len(self.game_result[0]) == 0:
+            data.append("Huang")
+        elif len(self.game_result[0]) == 1:
+            hu_player_id: int = self.game_result[0][0]
+            last_card_id: int = self.last_observation[2]
+            data.append(f"Player {hu_player_id} Hu {Card.decoding(last_card_id)}")
+            data.append(self.game_result[1][0])
+        else:
+            last_player_id: int = self.last_observation[0]
+            last_card_id: int = self.last_observation[2]
+            for i in range(1, 4):
+                nearest_player_id: int = (last_player_id + i) % 4
+                if nearest_player_id in self.game_result[0]:
+                    idx: int = self.game_result[0].index(nearest_player_id)
+                    data.append(f"Player {nearest_player_id} Hu {Card.decoding(last_card_id)}")
+                    data.append(self.game_result[1][idx])
+        return data

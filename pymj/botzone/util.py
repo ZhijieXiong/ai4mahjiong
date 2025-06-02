@@ -58,6 +58,51 @@ def split_data(botzone_data_path, target_dir):
         print(f"test: {hand_id} done")
 
 
+def split_data2(botzone_data_path, target_dir):
+    all_dir = os.path.join(target_dir, "all")
+    train_dir = os.path.join(target_dir, "train")
+    test_dir = os.path.join(target_dir, "test")
+    if not os.path.exists(all_dir):
+        os.mkdir(all_dir)
+    if not os.path.exists(train_dir):
+        os.mkdir(train_dir)
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
+
+    one_hand_data = ""
+    hand_id = ""
+    data_all = []
+    with open(botzone_data_path, "r") as rf:
+        for line in rf.readlines():
+            if "Match" in line:
+                if len(hand_id) > 0:
+                    target_path = os.path.join(all_dir, hand_id) + ".txt"
+                    with open(target_path, "w") as wf:
+                        wf.write(one_hand_data)
+                    print(f"{hand_id} done")
+                    data_all.append((hand_id, one_hand_data))
+                one_hand_data = ""
+                hand_id = line.split(" ")[1].strip()
+            else:
+                one_hand_data += line
+
+    random.shuffle(data_all)
+    num_all = len(data_all)
+    n = int(num_all * 0.9)
+    data_train = data_all[:n]
+    data_test = data_all[n:]
+    for hand_id, one_hand_data in data_train:
+        target_path = os.path.join(train_dir, hand_id) + ".txt"
+        with open(target_path, "w") as wf:
+            wf.write(one_hand_data)
+        print(f"train: {hand_id} done")
+    for hand_id, one_hand_data in data_test:
+        target_path = os.path.join(test_dir, hand_id) + ".txt"
+        with open(target_path, "w") as wf:
+            wf.write(one_hand_data)
+        print(f"test: {hand_id} done")
+
+
 class TileType(Enum):
     TONG = auto()    # 筒子
     BAMBOO = auto()  # 条子
