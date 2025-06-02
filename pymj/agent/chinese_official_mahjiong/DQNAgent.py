@@ -171,9 +171,7 @@ class Network(nn.Module):
         for i in range(4):
             if i != self_player_id:
                 other_played_card_ids.extend(players_played_card_ids[i])
-        other_played_card_features4mlp, _, _ = Network.feature_played_cards(
-            other_played_card_ids, self.num_history
-        )
+        other_played_card_features4mlp, _, _ = Network.feature_played_cards(other_played_card_ids, num_history)
         left_player_id = (self_player_id - 1) if (self_player_id > 0) else 3
         right_player_id = (self_player_id + 1) if (self_player_id < 3) else 0
         across_player_id = (self_player_id + 2) if (self_player_id < 2) else (self_player_id - 2)
