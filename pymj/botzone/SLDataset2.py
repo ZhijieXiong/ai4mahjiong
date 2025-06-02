@@ -9,22 +9,6 @@ from pymj.agent.chinese_official_mahjiong.DQNAgent import Network
 
 
 class SLDataset(Dataset):
-    ALL_TILES = {i: 4 for i in range(34)}
-    DRAW_SOURCE = {
-        Play: 0,
-        Chi: 1,
-        Peng: 2,
-        Gang: 3,
-        BuGang: 4,
-        AnGang: 5
-    }
-    MELD_TYPE = {
-        "Chi": 0,
-        "Peng": 1,
-        "Gang": 2,
-        "BuGang": 3,
-        "AnGang": 4
-    }
     # 天地人胡（对于模型训练没有意义）和包含连杠（数据处理模块尚未实现连杠处理）的比赛
     EXCLUDE_HAND_IDS = ["6162a99e5ddc087351c67f88.txt", "616264085ddc087351c5a045.txt", "616038c35ddc087351c06a04.txt",
                         "61633c0b5ddc087351c733de.txt", "61622e045ddc087351c50f86.txt", "6163f3555ddc087351c9a0ff.txt",
@@ -72,13 +56,17 @@ class SLDataset(Dataset):
                         "616177bf5ddc087351c2ef54.txt", "6161954f5ddc087351c34d3f.txt", "6162afa05ddc087351c6943d.txt",
                         "616367f15ddc087351c7f9e3.txt", "616041265ddc087351c085c2.txt"]
 
-    def __init__(self, data_path, device="cpu", data_transformers=None):
+    def __init__(self, data_path, device="cpu", mode="Play"):
         super().__init__()
         self.device = device
-        self.data_transformers = data_transformers
+        self.mode = mode
         data = torch.load(data_path, weights_only=True)
-        self.features = data["features"].to(self.device)
+        self.mlp_features = data["mlp_features"].to(self.device)
+        self.cnn_features = data["cnn_features"].to(self.device)
+        self.rnn_features = data["rnn_features"].to(self.device)
         self.labels = data["labels"].to(self.device)
+        self.weights = data["weights"].to(self.device)
+        self.mask = data["mask"]
 
     def __len__(self):
         return self.features.shape[0]
@@ -96,6 +84,7 @@ class SLDataset(Dataset):
         all_labels = []
         all_weights = []
         all_gang_mask = []
+        all_rnn_seqs_len = []
         n = 0
         if num_game <= 0:
             num_game = len(data_path_names)
@@ -202,6 +191,11 @@ class SLDataset(Dataset):
                             across_played_card_features4rnn.unsqueeze(dim=0)
                         ), dim=0).unsqueeze(dim=0)
                         features4cnn = features4cnn.unsqueeze(dim=0)
+                        rnn_seqs_len = torch.cat([
+                            self_seq_len.unsqueeze(dim=0), 
+                            left_seq_len.unsqueeze(dim=0), 
+                            right_seq_len.unsqueeze(dim=0), 
+                            across_seq_len.unsqueeze(dim=0)], dim=0)
                         all_mlp_features.append(features4mlp)
                         all_cnn_features.append(features4cnn)
                         all_rnn_features.append(features4rnn)
