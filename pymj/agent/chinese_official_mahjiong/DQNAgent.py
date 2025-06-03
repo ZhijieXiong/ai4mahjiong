@@ -57,12 +57,8 @@ class Network(nn.Module):
 
     def forward(self, mlp_features, cnn_features, rnn_features, rnn_seqs_len, label_mask=None):
         if self.training:
-            mlp_noise = torch.clamp(
-                torch.normal(0, 0.1, size=mlp_features.shape, device=mlp_features.device), -0.2, 0.2)
-            cnn_noise = torch.clamp(
-                torch.normal(0, 0.1, size=mlp_features.shape, device=cnn_features.device), -0.2, 0.2)
-            mlp_features += mlp_noise
-            cnn_features += cnn_noise
+            mlp_features = mlp_features * (1 + torch.randn_like(mlp_features) * 0.1)
+            cnn_features = cnn_features * (1 + torch.randn_like(cnn_features) * 0.05)
 
         mlp_out = self.mlp_branch(mlp_features)  # (batch, 128)
         cnn_out = self.cnn_branch(cnn_features.unsqueeze(1))  # (batch, 128)
