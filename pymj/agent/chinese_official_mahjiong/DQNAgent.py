@@ -4,8 +4,13 @@ import torch.nn as nn
 from collections import defaultdict
 
 
+def freeze_module(module: nn.Module):
+    for param in module.parameters():
+        param.requires_grad = False
+
+
 class Network(nn.Module):
-    def __init__(self, num_class, dim_mlp, dim_rnn, dropout=0.2):
+    def __init__(self, num_class, dim_mlp, dim_rnn, dropout=0.1, pretrain_path=None):
         super().__init__()
         self.embed_played_card = nn.Embedding(35, dim_rnn)
 
@@ -21,8 +26,10 @@ class Network(nn.Module):
         self.cnn_branch = nn.Sequential(
             nn.Conv2d(in_channels=1, out_channels=8, kernel_size=(1, 3), padding=(0, 1)),
             nn.ReLU(),
+            nn.Dropout(0.05),
             nn.Conv2d(8, 16, kernel_size=(1, 3), padding=(0, 1)),
             nn.ReLU(),
+            nn.Dropout(0.05),
             nn.Flatten(),  # 输出为 batch × (16 * 4 * 34)
             nn.Linear(16 * 4 * 34, 128),
         )
@@ -42,12 +49,23 @@ class Network(nn.Module):
             nn.Linear(64, num_class)
         )
 
+        if pretrain_path is not None:
+            self.load_state_dict(torch.load(pretrain_path, map_location="cpu"))
+            freeze_module(self.mlp_branch)
+            freeze_module(self.cnn_branch)
+            freeze_module(self.rnn)
+
     def forward(self, mlp_features, cnn_features, rnn_features, rnn_seqs_len, label_mask=None):
+        if self.training:
+            mlp_noise = torch.clamp(
+                torch.normal(0, 0.1, size=mlp_features.shape, device=mlp_features.device), -0.2, 0.2)
+            cnn_noise = torch.clamp(
+                torch.normal(0, 0.1, size=mlp_features.shape, device=cnn_features.device), -0.2, 0.2)
+            mlp_features += mlp_noise
+            cnn_features += cnn_noise
+
         mlp_out = self.mlp_branch(mlp_features)  # (batch, 128)
-
-        x = cnn_features.unsqueeze(1)  # 增加 channel 维度: (batch, 1, 4, 34)
-        cnn_out = self.cnn_branch(x)  # (batch, 128)
-
+        cnn_out = self.cnn_branch(cnn_features.unsqueeze(1))  # (batch, 128)
         rnn_out, _ = self.rnn(rnn_features)  # (batch, 4, 64)
         batch_size = rnn_out.size(0)
         last_step_indices = rnn_seqs_len.max(dim=1)[0] - 1  # shape: (batch,)

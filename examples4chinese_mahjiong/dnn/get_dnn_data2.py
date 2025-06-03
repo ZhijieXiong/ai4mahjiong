@@ -7,5 +7,5 @@ for data_mode in ["train", "test"]:
         SLDataset.save_data(f"/Users/dream/myProjects/Mahjiong/ai4mahjiong/botzone_data/game_data/{data_mode}",
                             mode,
                             f"/Users/dream/myProjects/Mahjiong/ai4mahjiong/botzone_data/sl_hybrid_data/{data_mode}",
-                            10)
+                            0)
 

@@ -56,23 +56,28 @@ class SLDataset(Dataset):
                         "616177bf5ddc087351c2ef54.txt", "6161954f5ddc087351c34d3f.txt", "6162afa05ddc087351c6943d.txt",
                         "616367f15ddc087351c7f9e3.txt", "616041265ddc087351c085c2.txt"]
 
-    def __init__(self, data_path, device="cpu", mode="Play"):
+    def __init__(self, data_path, device="cpu"):
         super().__init__()
         self.device = device
-        self.mode = mode
         data = torch.load(data_path, weights_only=True)
         self.mlp_features = data["mlp_features"].to(self.device)
         self.cnn_features = data["cnn_features"].to(self.device)
         self.rnn_features = data["rnn_features"].to(self.device)
+        self.rnn_seqs_len = data["rnn_seqs_len"].to(self.device)
         self.labels = data["labels"].to(self.device)
         self.weights = data["weights"].to(self.device)
-        self.mask = data["mask"]
+        if "mask" not in data:
+            num_sample = self.labels.shape[0]
+            self.mask = torch.ones((num_sample, )).long().to(self.device)
+        else:
+            self.mask = data["mask"]
 
     def __len__(self):
-        return self.features.shape[0]
+        return self.labels.shape[0]
 
     def __getitem__(self, item):
-        return self.features[item].to_dense().float(), self.labels[item]
+        return (self.mlp_features[item], self.cnn_features[item], self.rnn_features[item], self.rnn_seqs_len[item],
+                self.labels[item], self.weights[item], self.mask[item])
 
     @staticmethod
     def save_data(original_data_dir, mode, save_data_dir, num_game=10):
@@ -199,6 +204,7 @@ class SLDataset(Dataset):
                         all_mlp_features.append(features4mlp)
                         all_cnn_features.append(features4cnn)
                         all_rnn_features.append(features4rnn)
+                        all_rnn_seqs_len.append(rnn_seqs_len.unsqueeze(dim=0))
                         if mode == "Play":
                             all_labels.append(action.tile_out)
                         elif mode == "Gang":
@@ -223,6 +229,7 @@ class SLDataset(Dataset):
             "mlp_features": torch.cat(all_mlp_features, dim=0),  # (n, 288, )
             "cnn_features": torch.cat(all_cnn_features, dim=0),  # (n, 4, 34)
             "rnn_features": torch.cat(all_rnn_features, dim=0),  # (n, 4, 21)
+            "rnn_seqs_len": torch.cat(all_rnn_seqs_len, dim=0),  # (n, 4)
             "labels": torch.tensor(all_labels).long(),  # (n, )
             "weights": torch.tensor(all_weights).float(),  # (n, )
         }
