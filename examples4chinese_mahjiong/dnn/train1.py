@@ -78,7 +78,7 @@ if __name__ == "__main__":
                 max_acc = acc
                 torch.save({"state_dict": model.state_dict()}, best_model_path)
         model.train()
-        scheduler.step(acc)
+        scheduler.step()
     if args.mode == "Play":
         print(f"best ACC: {max_acc}")
     else:

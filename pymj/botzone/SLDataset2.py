@@ -70,7 +70,7 @@ class SLDataset(Dataset):
             num_sample = self.labels.shape[0]
             self.mask = torch.ones((num_sample, )).long().to(self.device)
         else:
-            self.mask = data["mask"]
+            self.mask = data["mask"].to(self.device)
 
     def __len__(self):
         return self.labels.shape[0]

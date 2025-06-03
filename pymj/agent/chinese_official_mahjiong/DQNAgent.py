@@ -36,14 +36,14 @@ class Network(nn.Module):
 
         # RNN 分支
         self.rnn = nn.GRU(dim_rnn, 64)
-        self.rnn_fc = nn.Linear(64, 128)
+        self.rnn_fc = nn.Linear(64 * 4, 128)
 
         # 融合层
         self.fusion = nn.Sequential(
-            nn.Linear(128 * 3, 128),
+            nn.Linear(128 * 3, 256),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(128, 64),
+            nn.Linear(256, 64),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(64, num_class)
@@ -55,24 +55,25 @@ class Network(nn.Module):
             freeze_module(self.cnn_branch)
             freeze_module(self.rnn)
 
-    def forward(self, mlp_features, cnn_features, rnn_features, rnn_seqs_len, label_mask=None):
-        if self.training:
+    def forward(self, mlp_features, cnn_features, rnn_features, rnn_seqs_len, label_mask=None, noise=False):
+        if self.training and noise:
             mlp_features = mlp_features * (1 + torch.randn_like(mlp_features) * 0.1)
             cnn_features = cnn_features * (1 + torch.randn_like(cnn_features) * 0.05)
 
         mlp_out = self.mlp_branch(mlp_features)  # (batch, 128)
         cnn_out = self.cnn_branch(cnn_features.unsqueeze(1))  # (batch, 128)
-        rnn_out, _ = self.rnn(rnn_features)  # (batch, 4, 64)
-        batch_size = rnn_out.size(0)
-        last_step_indices = rnn_seqs_len.max(dim=1)[0] - 1  # shape: (batch,)
-        last_hidden = rnn_out[torch.arange(batch_size), last_step_indices]  # (batch, hidden_size)
-        rnn_out = self.rnn_fc(last_hidden)  # (batch, 128)
-
-        fused = torch.cat([mlp_out, cnn_out, rnn_out], dim=-1)  # (batch, 384)
-        output = self.fusion(fused)  # (batch, 34)
+        rnn_input = self.embed_played_card(rnn_features)
+        batch_size, n, seq_len, _ = rnn_input.shape
+        merged_input = rnn_input.reshape(batch_size, n * seq_len, -1)
+        merged_output, _ = self.rnn(merged_input)  
+        rnn_out = merged_output.reshape(batch_size, n, seq_len, -1)  # (batch, 4, 64)
+        expanded_indices = torch.clamp_min(rnn_seqs_len - 1, 0).unsqueeze(-1).expand(-1, -1, rnn_out.shape[-1]).unsqueeze(2)  # 形状 (bs, n, 1, dim)
+        rnn_out = torch.gather(rnn_out, dim=2, index=expanded_indices).squeeze(2)
+        fused_features = torch.cat([mlp_out, cnn_out, self.rnn_fc(rnn_out.reshape(batch_size, -1))], dim=-1)  # (batch, 384)
+        output = self.fusion(fused_features)  # (batch, 34)
 
         if label_mask is not None:
-            output = output.masked_fill(~label_mask, float('-inf'))
+            output = output.masked_fill(~label_mask, -1e6)
 
         return output
 

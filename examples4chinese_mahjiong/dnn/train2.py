@@ -1,6 +1,7 @@
 import os
 import argparse
 import torch
+import numpy as np
 from torch.optim import AdamW
 from torch.utils.data import DataLoader
 from torch.nn import CrossEntropyLoss, BCEWithLogitsLoss
@@ -13,19 +14,20 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', '-m', type=str, default="Gang")
+    parser.add_argument('--mode', '-m', type=str, default="Play")
     parser.add_argument('--dim_rnn', '-dr', type=int, default=64)
     parser.add_argument('--dropout', '-d', type=float, default=0.1)
     parser.add_argument('--pretrain_path', '-p', type=str, default="")
-    parser.add_argument('--max_epochs', '-me', type=int, default=10)
+    parser.add_argument('--max_epochs', '-me', type=int, default=20)
+    parser.add_argument('--noise', '-n', type=int, default=0)
     args = parser.parse_args()
     assert args.mode in ["Play", "Chi", "Peng", "Gang"]
 
-    model_dir = "/root/autodl-tmp/mah_jiong/models"
+    model_dir = f"/root/autodl-tmp/mah_jiong/models{'' if args.noise else '_no'}_noise"
     train_set = SLDataset(f"/root/autodl-tmp/mah_jiong/sl_hybrid_data/train/{args.mode}.pt", DEVICE)
     valid_set = SLDataset(f"/root/autodl-tmp/mah_jiong/sl_hybrid_data/test/{args.mode}.pt", DEVICE)
     train_loader = DataLoader(train_set, batch_size=1024, shuffle=True)
-    valid_loader = DataLoader(valid_set, batch_size=4096)
+    valid_loader = DataLoader(valid_set, batch_size=1024)
 
     if os.path.exists(args.pretrain_path):
         pretrain_path = args.pretrain_path
@@ -86,8 +88,8 @@ if __name__ == "__main__":
                                                 total_iters=int(0.1 * total_steps))
         ],
         milestones=[
-            int(0.1 * total_steps),
-            int(0.9 * total_steps)
+            int(0.2 * total_steps),
+            int(0.8 * total_steps)
         ]
     )
 
@@ -97,54 +99,58 @@ if __name__ == "__main__":
         loss_fcn = BCEWithLogitsLoss()
 
     current_step = 0
+    step2save = total_samples // batch_size
     if args.mode == "Play":
-        step2save = 1000
+        step2save = (total_samples // batch_size) // 3
     elif args.mode == "Chi":
-        step2save = 400
-    elif args.mode == "Peng":
-        step2save = 200
+        step2save = (total_samples // batch_size) // 2
     else:
-        step2save = 100
+        step2save = total_samples // batch_size
     max_acc = 0
     max_auc = 0
     best_step_num = 0
     losses = []
+    add_noise = args.noise == 1
     for epoch in range(args.max_epochs):
-        for features, labels in train_loader:
-            output = model(features)
-            if args.mode == "Play":
+        for mlp_features, cnn_features, rnn_features, rnn_seqs_len, labels, weights, mask in train_loader:
+            if args.mode == "Gang":
+                output = model(mlp_features, cnn_features, rnn_features, rnn_seqs_len, mask, add_noise)
+            else:
+                output = model(mlp_features, cnn_features, rnn_features, rnn_seqs_len, noise=add_noise)
+            if args.mode in ["Play", "Gang"]:
                 loss = loss_fcn(output, labels)
             else:
                 loss = loss_fcn(output.squeeze(dim=-1), labels.float())
             losses.append(loss.detach().item())
-            optim.zero_grad()
             loss.backward()
             optim.step()
+            scheduler.step()
+            optim.zero_grad()
 
             current_step += 1
             if current_step % step2save == 0:
-                if current_step > 0:
-                    model_path = os.path.join(model_dir, f"{args.mode}-{current_step // step2save}.ckt")
-                    torch.save({"state_dict": model.state_dict()}, model_path)
+                model_path = os.path.join(model_dir, f"{args.mode}-{current_step // step2save}.ckt")
                 all_pre_scores = []
                 all_pre_labels = []
                 all_labels = []
                 total_samples = 0
                 correct = 0
                 model.eval()
-                for features_, labels_ in valid_loader:
-                    logits_ = model(features_)
-                    if args.mode in ["Play", "Gang"]:
-                        pre_labels = logits_.softmax(1).argmax(1)  # 获取预测类别
+                for mlp_features_, cnn_features_, rnn_features_, rnn_seqs_len_, labels_, weights_, mask_ in valid_loader:
+                    if args.mode == "Gang":
+                        output_ = model(mlp_features_, cnn_features_, rnn_features_, rnn_seqs_len_, mask_)
                     else:
-                        pre_scores = logits_.squeeze(dim=-1)
-                        all_pre_scores.append(pre_scores.cpu().numpy())
-                        pre_labels = (torch.sigmoid(pre_scores) >= 0.5).long()
-                    batch_size = labels.size(0)
-                    total_samples += batch_size
-                    correct += (pre_labels == labels).sum().item()
-                    all_pre_labels.append(pre_labels.cpu().numpy())
-                    all_labels.append(labels.cpu().numpy())
+                        output_ = model(mlp_features_, cnn_features_, rnn_features_, rnn_seqs_len_)
+                    if args.mode in ["Play", "Gang"]:
+                        pre_labels = output_.softmax(1).argmax(1)  # 获取预测类别
+                        batch_size = labels_.size(0)
+                        total_samples += batch_size
+                        correct += (pre_labels == labels_).sum().item()
+                        all_pre_labels.append(pre_labels.cpu().numpy())
+                    else:
+                        pre_scores = output_.squeeze(dim=-1)
+                        all_pre_scores.append(pre_scores.cpu().detach().numpy())
+                    all_labels.append(labels_.cpu().detach().numpy())
 
                 ave_loss = sum(losses) / len(losses)
                 if args.mode in ["Play", "Gang"]:
@@ -154,11 +160,12 @@ if __name__ == "__main__":
                         best_step_num = current_step // step2save
                     print(f"step num {current_step // step2save} ACC: {acc}, loss: {ave_loss}")
                 else:
-                    auc = roc_auc_score(np.concatenate(all_labels), np.concatenate(all_pre_labels))
+                    auc = roc_auc_score(np.concatenate(all_labels), np.concatenate(all_pre_scores))
                     if auc > max_auc:
                         max_auc = auc
                         best_step_num = current_step // step2save
                     print(f"step num {current_step // step2save} AUC: {auc}, loss: {ave_loss}")
+                torch.save({"state_dict": model.state_dict()}, model_path)
                 losses = []
                 model.train()
 
