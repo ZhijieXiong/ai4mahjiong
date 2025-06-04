@@ -17,23 +17,26 @@ if __name__ == "__main__":
     parser.add_argument('--mode', '-m', type=str, default="Play")
     parser.add_argument('--dim_rnn', '-dr', type=int, default=64)
     parser.add_argument('--dropout', '-d', type=float, default=0.1)
-    parser.add_argument('--pretrain_path', '-p', type=str, default="")
+    parser.add_argument('--pretrain_path', '-p', type=str, default="/root/autodl-tmp/mah_jiong/models_weight_no_noise/Play-48.ckt")
     parser.add_argument('--max_epochs', '-me', type=int, default=20)
     parser.add_argument('--add_noise', '-an', type=int, default=0)
     parser.add_argument('--use_weight', '-uw', type=int, default=1)
     args = parser.parse_args()
     assert args.mode in ["Play", "Chi", "Peng", "Gang"]
 
-    model_dir = f"/root/autodl-tmp/mah_jiong/models{'' if args.noise else '_no'}_noise"
+    if os.path.exists(args.pretrain_path):
+        pretrain_path = args.pretrain_path
+        use_pretrain = True
+    else:
+        pretrain_path = None
+        use_pretrain = False
+    model_dir = f"/root/autodl-tmp/mah_jiong/models{'' if args.use_weight else '_no'}_weight{'' if args.add_noise else '_no'}_noise{'' if use_pretrain else '_no'}_pretrain"
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir, exist_ok=True)
     train_set = SLDataset(f"/root/autodl-tmp/mah_jiong/sl_hybrid_data/train/{args.mode}.pt", DEVICE)
     valid_set = SLDataset(f"/root/autodl-tmp/mah_jiong/sl_hybrid_data/test/{args.mode}.pt", DEVICE)
     train_loader = DataLoader(train_set, batch_size=1024, shuffle=True)
     valid_loader = DataLoader(valid_set, batch_size=1024)
-
-    if os.path.exists(args.pretrain_path):
-        pretrain_path = args.pretrain_path
-    else:
-        pretrain_path = None
     if args.mode == "Play":
         model = Network(34, 288, args.dim_rnn, args.dropout, pretrain_path)
     elif args.mode == "Gang":
@@ -59,8 +62,8 @@ if __name__ == "__main__":
         # RNN分支（包含embedding和GRU）
         {
             'params': list(model.embed_played_card.parameters()) +
-                      list(model.rnn.parameters()) +
-                      list(model.rnn_fc.parameters()),
+                    list(model.rnn.parameters()) +
+                    list(model.rnn_fc.parameters()),
             'lr': 2e-4,
             'weight_decay': 0.001
         },
@@ -123,9 +126,9 @@ if __name__ == "__main__":
             else:
                 loss = loss_fcn(output.squeeze(dim=-1), labels.float())
             if args.use_weight:
-                weighted_loss = (loss * weights).mean()
+                loss = (loss * weights).mean()
             else:
-                weighted_loss = loss.mean()
+                loss = loss.mean()
             losses.append(loss.detach().item())
             loss.backward()
             optim.step()

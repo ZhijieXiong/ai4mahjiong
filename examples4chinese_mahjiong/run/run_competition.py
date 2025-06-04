@@ -6,6 +6,7 @@ from pymj.game.chinese_ofiicial_mahjiong.Competition import Competition
 from pymj.agent.chinese_official_mahjiong.FuLuRandomAgent import FuLuRandomAgent
 from pymj.agent.chinese_official_mahjiong.EfficientAgent import EfficientAgent
 from pymj.agent.chinese_official_mahjiong.SLBasedAgent import SLBasedAgent
+from pymj.agent.chinese_official_mahjiong.SLBasedHybirdAgent import SLBasedAgent as SLBasedHybirdAgent
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -204,12 +205,58 @@ def test_competition7():
             ),
         ], 256, random_generator=random_generator).run()
     
+    
+def test_competition8():
+    """
+    对比纯CNN模型和混合模型
+    """
+    random_seed = 0
+    random_generator: np.random.RandomState = np.random.RandomState(random_seed)
+    Competition(
+        [
+            SLBasedAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
+                device=DEVICE, use_choose_card2_chi=True
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models_weight_no_noise_no_pretrain/Chi-40.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models_weight_no_noise_no_pretrain/Peng-14.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models_weight_no_noise_no_pretrain/Gang-12.ckt",
+                device=DEVICE
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models_no_weight_no_noise_no_pretrain/Chi-40.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models_no_weight_no_noise_no_pretrain/Peng-16.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models_no_weight_no_noise_no_pretrain/Gang-13.ckt",
+                device=DEVICE
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models_weight_no_noise_pretrain/Chi-32.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models_weight_no_noise_pretrain/Peng-16.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models_weight_no_noise_pretrain/Gang-9.ckt",
+                device=DEVICE
+            ),
+        ], 256, random_generator=random_generator).run()
+    
 
 if __name__ == "__main__":
     # test_competition1()
     # test_competition2()
     # test_competition3()
     # test_competition4()
-    test_competition5()
-    test_competition6()
-    test_competition7()
+    # test_competition5()
+    # test_competition6()
+    # test_competition7()
+    test_competition8()

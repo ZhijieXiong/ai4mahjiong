@@ -33,14 +33,62 @@ class SLBasedAgent(Agent):
         )
         return model.to(device)
 
-    @staticmethod
-    def get_features(state: dict) -> tuple[torch.Tensor, ...]:
-        pass
+    def get_features(self, self_hand_card_ids: list[int], state: dict) -> tuple[torch.Tensor, ...]:
+        self_wind = int(state["self_wind"])
+        self_player_id = self_wind
+        game_wind = int(state["game_wind"])
+        players_melds = state["players_melds"]
+        players_played_card_ids = state["players_played_card_ids"]
+        wind_features = Network.feature_wind(self_wind, game_wind)
+        self_hand_card_features4mlp, features4cnn = Network.feature_self_cards(
+            self_hand_card_ids)
+        self_played_card_features4mlp, self_played_card_features4rnn, self_seq_len = (
+            Network.feature_played_cards(players_played_card_ids[self_player_id], 21))
+        self_melds_features = Network.feature_melds(players_melds[self_player_id])
+        other_played_card_ids = []
+        for i in range(4):
+            if i != self_player_id:
+                other_played_card_ids.extend(players_played_card_ids[i])
+        other_played_card_features4mlp, _, _ = Network.feature_played_cards(
+            other_played_card_ids, 21
+        )
+        left_player_id = (self_player_id - 1) if (self_player_id > 0) else 3
+        right_player_id = (self_player_id + 1) if (self_player_id < 3) else 0
+        across_player_id = (self_player_id + 2) if (self_player_id < 2) else (self_player_id - 2)
+        _, left_played_card_features4rnn, left_seq_len = (
+            Network.feature_played_cards(players_played_card_ids[left_player_id], 21))
+        _, right_played_card_features4rnn, right_seq_len = (
+            Network.feature_played_cards(players_played_card_ids[right_player_id], 21))
+        _, across_played_card_features4rnn, across_seq_len = (
+            Network.feature_played_cards(players_played_card_ids[across_player_id], 21))
+        remain_card_features = Network.feature_remain_cards(
+            self_player_id, self_hand_card_ids, tuple(players_played_card_ids), players_melds)
+        left_melds_features = Network.feature_melds(players_melds[left_player_id])
+        right_melds_features = Network.feature_melds(players_melds[right_player_id])
+        across_melds_features = Network.feature_melds(players_melds[across_player_id])
+        features4mlp = torch.cat(
+            (wind_features, self_hand_card_features4mlp, self_played_card_features4mlp,
+                self_melds_features, other_played_card_features4mlp, left_melds_features,
+                right_melds_features, across_melds_features, remain_card_features), dim=0
+        ).unsqueeze(dim=0)
+        features4rnn = torch.cat((
+            self_played_card_features4rnn.unsqueeze(dim=0),
+            left_played_card_features4rnn.unsqueeze(dim=0),
+            right_played_card_features4rnn.unsqueeze(dim=0),
+            across_played_card_features4rnn.unsqueeze(dim=0)
+        ), dim=0).unsqueeze(dim=0)
+        features4cnn = features4cnn.unsqueeze(dim=0)
+        rnn_seqs_len = torch.cat([
+            self_seq_len.unsqueeze(dim=0), 
+            left_seq_len.unsqueeze(dim=0), 
+            right_seq_len.unsqueeze(dim=0), 
+            across_seq_len.unsqueeze(dim=0)], dim=0)
+        return features4mlp.to(self.device), features4cnn.to(self.device), features4rnn.to(self.device), rnn_seqs_len.to(self.device)
 
     def choose_play(self, self_hand_card_ids: list[int], state: dict) -> int:
-        all_features: tuple[torch.Tensor, ...] = self.get_features(state)
-        model_output: torch.Tensor = self.play_model(features)
-        card2play_ids: list[int] = torch.sort(model_output[0, :-1], descending=True)[1].tolist()
+        features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
+        model_output: torch.Tensor = self.play_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len)
+        card2play_ids: list[int] = torch.sort(model_output[0], descending=True)[1].tolist()
         i: int = 0
         card2play_id: int = card2play_ids[i]
         while card2play_id not in self_hand_card_ids:
@@ -49,37 +97,35 @@ class SLBasedAgent(Agent):
         return card2play_id
 
     def choose_chi(self, self_hand_card_ids: list[int], state: dict, middle_card_ids: list[int]) -> int:
-        all_features: tuple[torch.Tensor, ...] = self.get_features(state)
-        model_output: torch.Tensor = self.play_model(features)
-        do_chi = self.chi_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+        features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
+        do_chi = self.chi_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len).squeeze(dim=-1).detach().cpu().item() > 0.5
         if do_chi:
             return self.random_generator.choice(middle_card_ids)
         else:
             return -1
 
     def choose_peng(self, self_hand_card_ids: list[int], state: dict, card2peng_id: int) -> bool:
-        all_features: tuple[torch.Tensor, ...] = self.get_features(state)
-        model_output: torch.Tensor = self.play_model(features)
-        return self.peng_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+        features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
+        return self.peng_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len).squeeze(dim=-1).detach().cpu().item() > 0.5
 
     def choose_gang(self, self_hand_card_ids: list[int], state: dict, card2gang_id: int) -> bool:
-        all_features: tuple[torch.Tensor, ...] = self.get_features(state)
-        model_output: torch.Tensor = self.play_model(features)
-        return self.gang_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+        features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
+        model_output = self.gang_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len)
+        return model_output[0][2] > model_output[0][3]
 
     def choose_bu_gang(self, self_hand_card_ids: list[int], state: dict, gang_card_ids: list[int]) -> int:
-        all_features: tuple[torch.Tensor, ...] = self.get_features(state)
-        model_output: torch.Tensor = self.play_model(features)
-        do_gang = self.bu_gang_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+        features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
+        model_output = self.gang_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len)
+        do_gang = model_output[0][1] > model_output[0][3]
         if do_gang:
             return self.random_generator.choice(gang_card_ids)
         else:
             return -1
 
     def choose_an_gang(self, self_hand_card_ids: list[int], state: dict, gang_card_ids: list[int]) -> int:
-        all_features: tuple[torch.Tensor, ...] = self.get_features(state)
-        model_output: torch.Tensor = self.play_model(features)
-        do_gang = self.an_gang_model(features).squeeze(dim=-1).detach().cpu().item() > 0.5
+        features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
+        model_output = self.gang_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len)
+        do_gang = model_output[0][0] > model_output[0][3]
         if do_gang:
             return self.random_generator.choice(gang_card_ids)
         else:

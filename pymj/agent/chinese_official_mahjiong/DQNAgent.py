@@ -50,7 +50,9 @@ class Network(nn.Module):
         )
 
         if pretrain_path is not None:
-            self.load_state_dict(torch.load(pretrain_path, map_location="cpu"))
+            pretrained = torch.load(pretrain_path, map_location="cpu", weights_only=True)["state_dict"]
+            filtered_state_dict = {k: v for k, v in pretrained.items() if not k.startswith("fusion.")}
+            self.load_state_dict(filtered_state_dict, strict=False)
             freeze_module(self.mlp_branch)
             freeze_module(self.cnn_branch)
             freeze_module(self.rnn)
@@ -67,7 +69,11 @@ class Network(nn.Module):
         merged_input = rnn_input.reshape(batch_size, n * seq_len, -1)
         merged_output, _ = self.rnn(merged_input)  
         rnn_out = merged_output.reshape(batch_size, n, seq_len, -1)  # (batch, 4, 64)
-        expanded_indices = torch.clamp_min(rnn_seqs_len - 1, 0).unsqueeze(-1).expand(-1, -1, rnn_out.shape[-1]).unsqueeze(2)  # 形状 (bs, n, 1, dim)
+        try:
+            # 形状 (bs, n, 1, dim)
+            expanded_indices = torch.clamp_min(rnn_seqs_len - 1, 0).unsqueeze(-1).expand(-1, -1, rnn_out.shape[-1]).unsqueeze(2)  
+        except:
+            expanded_indices = torch.clamp_min(rnn_seqs_len - 1, 0).unsqueeze(1).unsqueeze(2).unsqueeze(0).expand(-1, -1, -1, rnn_out.shape[-1])
         rnn_out = torch.gather(rnn_out, dim=2, index=expanded_indices).squeeze(2)
         fused_features = torch.cat([mlp_out, cnn_out, self.rnn_fc(rnn_out.reshape(batch_size, -1))], dim=-1)  # (batch, 384)
         output = self.fusion(fused_features)  # (batch, 34)
