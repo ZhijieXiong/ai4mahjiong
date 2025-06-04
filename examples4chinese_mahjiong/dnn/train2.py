@@ -19,7 +19,8 @@ if __name__ == "__main__":
     parser.add_argument('--dropout', '-d', type=float, default=0.1)
     parser.add_argument('--pretrain_path', '-p', type=str, default="")
     parser.add_argument('--max_epochs', '-me', type=int, default=20)
-    parser.add_argument('--noise', '-n', type=int, default=0)
+    parser.add_argument('--add_noise', '-an', type=int, default=0)
+    parser.add_argument('--use_weight', '-uw', type=int, default=1)
     args = parser.parse_args()
     assert args.mode in ["Play", "Chi", "Peng", "Gang"]
 
@@ -94,9 +95,9 @@ if __name__ == "__main__":
     )
 
     if args.mode in ["Play", "Gang"]:
-        loss_fcn = CrossEntropyLoss()
+        loss_fcn = CrossEntropyLoss(reduction='none')
     else:
-        loss_fcn = BCEWithLogitsLoss()
+        loss_fcn = BCEWithLogitsLoss(reduction='none')
 
     current_step = 0
     step2save = total_samples // batch_size
@@ -110,7 +111,7 @@ if __name__ == "__main__":
     max_auc = 0
     best_step_num = 0
     losses = []
-    add_noise = args.noise == 1
+    add_noise = args.add_noise == 1
     for epoch in range(args.max_epochs):
         for mlp_features, cnn_features, rnn_features, rnn_seqs_len, labels, weights, mask in train_loader:
             if args.mode == "Gang":
@@ -121,6 +122,10 @@ if __name__ == "__main__":
                 loss = loss_fcn(output, labels)
             else:
                 loss = loss_fcn(output.squeeze(dim=-1), labels.float())
+            if args.use_weight:
+                weighted_loss = (loss * weights).mean()
+            else:
+                weighted_loss = loss.mean()
             losses.append(loss.detach().item())
             loss.backward()
             optim.step()
