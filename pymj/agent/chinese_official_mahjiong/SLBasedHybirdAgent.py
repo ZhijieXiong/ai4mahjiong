@@ -2,21 +2,30 @@ import torch
 import numpy as np
 
 from pymj.agent.chinese_official_mahjiong.Agent import Agent
-from pymj.agent.chinese_official_mahjiong.DQNAgent import Network
+from pymj.agent.chinese_official_mahjiong.DQNAgent import Network, DeepNetwork
 
 
 class SLBasedAgent(Agent):
     def __init__(self, random_generator: np.random.RandomState, play_model_path: str = None, chi_model_path: str = None,
-                 peng_model_path: str = None, gang_model_path: str = None, device: str = "cpu"):
+                 peng_model_path: str = None, gang_model_path: str = None, device: str = "cpu", deep: bool = False, 
+                 n1: float = 0.55, n2: float = 1.0):
         self.random_generator: np.random.RandomState = random_generator
         self.device: str = device
-        self.play_model = SLBasedAgent.load_model(play_model_path, "Play", self.device)
-        self.play_model.eval()
-        self.chi_model = SLBasedAgent.load_model(chi_model_path, "Chi", self.device)
-        self.chi_model.eval()
-        self.peng_model = SLBasedAgent.load_model(peng_model_path, "Peng", self.device)
+        self.n1: float = n1
+        self.n2: float = n2
+        if deep:
+            self.play_model = SLBasedAgent.load_deep_model(play_model_path, "Play", self.device)
+            self.chi_model = SLBasedAgent.load_deep_model(chi_model_path, "Chi", self.device)
+            self.peng_model = SLBasedAgent.load_deep_model(peng_model_path, "Peng", self.device)
+            self.gang_model = SLBasedAgent.load_deep_model(gang_model_path, "Gang", self.device)
+        else:
+            self.play_model = SLBasedAgent.load_model(play_model_path, "Play", self.device)
+            self.chi_model = SLBasedAgent.load_model(chi_model_path, "Chi", self.device)
+            self.peng_model = SLBasedAgent.load_model(peng_model_path, "Peng", self.device)
+            self.gang_model = SLBasedAgent.load_model(gang_model_path, "Gang", self.device)
         self.peng_model.eval()
-        self.gang_model = SLBasedAgent.load_model(gang_model_path, "Gang", self.device)
+        self.chi_model.eval()
+        self.play_model.eval()
         self.gang_model.eval()
 
     @staticmethod
@@ -28,6 +37,20 @@ class SLBasedAgent(Agent):
             model = Network(4, 288, 64)
         else:
             model = Network(1, 288, 64)
+        model.load_state_dict(
+            torch.load(model_path, weights_only=True, map_location="cpu")["state_dict"]
+        )
+        return model.to(device)
+
+    @staticmethod
+    def load_deep_model(model_path: str, model_type: str, device: str):
+        assert model_type in ["Play", "Chi", "Peng", "Gang"]
+        if model_type == "Play":
+            model = DeepNetwork(34, 288, 64)
+        elif model_type == "Gang":
+            model = DeepNetwork(4, 288, 64)
+        else:
+            model = DeepNetwork(1, 288, 64)
         model.load_state_dict(
             torch.load(model_path, weights_only=True, map_location="cpu")["state_dict"]
         )
@@ -98,7 +121,7 @@ class SLBasedAgent(Agent):
 
     def choose_chi(self, self_hand_card_ids: list[int], state: dict, middle_card_ids: list[int]) -> int:
         features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
-        do_chi = self.chi_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len).squeeze(dim=-1).detach().cpu().item() > 0.5
+        do_chi = self.chi_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len).squeeze(dim=-1).detach().cpu().item() > self.n1
         if do_chi:
             return self.random_generator.choice(middle_card_ids)
         else:
@@ -106,17 +129,17 @@ class SLBasedAgent(Agent):
 
     def choose_peng(self, self_hand_card_ids: list[int], state: dict, card2peng_id: int) -> bool:
         features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
-        return self.peng_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len).squeeze(dim=-1).detach().cpu().item() > 0.5
+        return self.peng_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len).squeeze(dim=-1).detach().cpu().item() > self.n1
 
     def choose_gang(self, self_hand_card_ids: list[int], state: dict, card2gang_id: int) -> bool:
         features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
         model_output = self.gang_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len)
-        return model_output[0][2] > model_output[0][3]
-
+        return (model_output[0][2] / model_output[0][3]) >= self.n2
+    
     def choose_bu_gang(self, self_hand_card_ids: list[int], state: dict, gang_card_ids: list[int]) -> int:
         features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
         model_output = self.gang_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len)
-        do_gang = model_output[0][1] > model_output[0][3]
+        do_gang = (model_output[0][1] / model_output[0][3]) >= self.n2
         if do_gang:
             return self.random_generator.choice(gang_card_ids)
         else:
@@ -125,7 +148,7 @@ class SLBasedAgent(Agent):
     def choose_an_gang(self, self_hand_card_ids: list[int], state: dict, gang_card_ids: list[int]) -> int:
         features4mlp, features4cnn, features4rnn, rnn_seqs_len = self.get_features(self_hand_card_ids, state)
         model_output = self.gang_model(features4mlp, features4cnn, features4rnn, rnn_seqs_len)
-        do_gang = model_output[0][0] > model_output[0][3]
+        do_gang = (model_output[0][0] / model_output[0][3]) >= self.n2
         if do_gang:
             return self.random_generator.choice(gang_card_ids)
         else:
