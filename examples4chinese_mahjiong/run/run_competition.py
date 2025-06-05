@@ -349,6 +349,114 @@ def test_competition10():
                 n2=1.15
             ),
         ], 256, random_generator=random_generator).run()
+    
+    
+def test_competition11():
+    """
+    对比不同程度的保守副露策略
+    """
+    random_seed = 0
+    random_generator: np.random.RandomState = np.random.RandomState(random_seed)
+    Competition(
+        [
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
+                device=DEVICE,
+                deep=True,
+                n1=0.5,
+                n2=1.0
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
+                device=DEVICE,
+                deep=True,
+                n1=0.45,
+                n2=0.95
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
+                device=DEVICE,
+                deep=True,
+                n1=0.4,
+                n2=0.9
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
+                device=DEVICE,
+                deep=True,
+                n1=0.35,
+                n2=0.85
+            ),
+        ], 256, random_generator=random_generator).run()
+    
+
+def test_competition12():
+    """
+    纯CNN模型和混合模型对不
+    """
+    random_seed = 0
+    random_generator: np.random.RandomState = np.random.RandomState(random_seed)
+    Competition(
+        [
+            SLBasedAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
+                device=DEVICE, use_choose_card2_chi=True
+            ),
+            SLBasedAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/models/Play_10_0.0001_256_1e-06.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/models/Chi_10_0.0001_1024_1e-06.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/models/Peng_7_0.0001_1024_1e-06.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/models/Gang_5_0.0001_1024_1e-06.ckt",
+                an_gang_model_path="/root/autodl-tmp/mah_jiong/models/AnGang_5_0.0001_1024_1e-06.ckt",
+                bu_gang_model_path="/root/autodl-tmp/mah_jiong/models/BuGang_5_0.0001_1024_1e-06.ckt",
+                device=DEVICE, use_choose_card2_chi=True
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
+                device=DEVICE,
+                deep=True,
+                n1=0.5,
+                n2=1.0
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
+                device=DEVICE,
+                deep=True,
+                n1=0.5,
+                n2=1.0
+            ),
+        ], 256, random_generator=random_generator).run()
         
 
 if __name__ == "__main__":
@@ -361,4 +469,6 @@ if __name__ == "__main__":
     # test_competition7()
     # test_competition8()
     # test_competition9()
-    test_competition10()
+    # test_competition10()
+    # test_competition11()
+    test_competition12()

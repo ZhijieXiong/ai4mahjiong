@@ -155,7 +155,7 @@ if __name__ == "__main__":
         os.makedirs(model_dir, exist_ok=True)
     train_set = SLDataset(f"/root/autodl-tmp/mah_jiong/sl_hybrid_data/train/{args.mode}.pt", DEVICE)
     valid_set = SLDataset(f"/root/autodl-tmp/mah_jiong/sl_hybrid_data/test/{args.mode}.pt", DEVICE)
-    train_loader = DataLoader(train_set, batch_size=512, shuffle=True)
+    train_loader = DataLoader(train_set, batch_size=1024, shuffle=True)
     valid_loader = DataLoader(valid_set, batch_size=1024)
     if use_deep:
         Model = DeepNetwork
