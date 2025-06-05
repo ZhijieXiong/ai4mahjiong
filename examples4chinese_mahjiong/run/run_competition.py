@@ -1,7 +1,6 @@
 import torch
 import numpy as np
 
-
 from pymj.game.chinese_ofiicial_mahjiong.Competition import Competition
 from pymj.agent.chinese_official_mahjiong.FuLuRandomAgent import FuLuRandomAgent
 from pymj.agent.chinese_official_mahjiong.EfficientAgent import EfficientAgent
@@ -24,7 +23,7 @@ def test_competition1():
             FuLuRandomAgent(random_generator, chi=False, gang=False),
             FuLuRandomAgent(random_generator, chi=False, peng=False)
         ], 256, random_generator=random_generator).run()
-    
+
 
 def test_competition2():
     """
@@ -39,8 +38,8 @@ def test_competition2():
             EfficientAgent(random_generator, chi=False, gang=False),
             EfficientAgent(random_generator, chi=False, peng=False)
         ], 256, random_generator=random_generator).run()
-    
-    
+
+
 def test_competition3():
     """
     吃牌选择消融实验，基于牌效率模型
@@ -120,7 +119,7 @@ def test_competition5():
                 device=DEVICE
             )
         ], 256, random_generator=random_generator).run()
-     
+
 
 def test_competition6():
     """
@@ -204,8 +203,8 @@ def test_competition7():
                 device=DEVICE, use_choose_card2_chi=True
             ),
         ], 256, random_generator=random_generator).run()
-    
-    
+
+
 def test_competition8():
     """
     对比混合模型使用加权损失和不使用加权损失
@@ -247,7 +246,7 @@ def test_competition8():
                 device=DEVICE
             ),
         ], 256, random_generator=random_generator).run()
-    
+
 
 def test_competition9():
     """
@@ -294,8 +293,8 @@ def test_competition9():
                 deep=True
             ),
         ], 256, random_generator=random_generator).run()
-    
-    
+
+
 def test_competition10():
     """
     对比不同程度的保守副露策略
@@ -323,19 +322,8 @@ def test_competition10():
                 gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
                 device=DEVICE,
                 deep=True,
-                n1=0.55,
-                n2=1.05
-            ),
-            SLBasedHybirdAgent(
-                random_generator,
-                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
-                chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
-                peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
-                gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
-                device=DEVICE,
-                deep=True,
                 n1=0.6,
-                n2=1.1
+                n2=1.0
             ),
             SLBasedHybirdAgent(
                 random_generator,
@@ -345,12 +333,23 @@ def test_competition10():
                 gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
                 device=DEVICE,
                 deep=True,
-                n1=0.65,
-                n2=1.15
+                n1=0.7,
+                n2=1.0
+            ),
+            SLBasedHybirdAgent(
+                random_generator,
+                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
+                peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
+                gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
+                device=DEVICE,
+                deep=True,
+                n1=0.8,
+                n2=1.0
             ),
         ], 256, random_generator=random_generator).run()
-    
-    
+
+
 def test_competition11():
     """
     对比不同程度的保守副露策略
@@ -378,7 +377,7 @@ def test_competition11():
                 gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
                 device=DEVICE,
                 deep=True,
-                n1=0.45,
+                n1=0.5,
                 n2=0.95
             ),
             SLBasedHybirdAgent(
@@ -389,7 +388,7 @@ def test_competition11():
                 gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
                 device=DEVICE,
                 deep=True,
-                n1=0.4,
+                n1=0.5,
                 n2=0.9
             ),
             SLBasedHybirdAgent(
@@ -400,11 +399,11 @@ def test_competition11():
                 gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
                 device=DEVICE,
                 deep=True,
-                n1=0.35,
+                n1=0.5,
                 n2=0.85
             ),
         ], 256, random_generator=random_generator).run()
-    
+
 
 def test_competition12():
     """
@@ -457,7 +456,7 @@ def test_competition12():
                 n2=1.0
             ),
         ], 256, random_generator=random_generator).run()
-        
+
 
 if __name__ == "__main__":
     # test_competition1()
@@ -469,6 +468,6 @@ if __name__ == "__main__":
     # test_competition7()
     # test_competition8()
     # test_competition9()
-    # test_competition10()
-    # test_competition11()
-    test_competition12()
+    test_competition10()
+    test_competition11()
+    # test_competition12()

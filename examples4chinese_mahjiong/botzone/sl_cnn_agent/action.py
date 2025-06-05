@@ -165,7 +165,7 @@ def choose_chi(state, middle_card_ids):
         features = torch.tensor([features]).float().to(DEVICE)
         return CHI_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
     except:
-        return True
+        return False
 
 
 def choose_peng(state, card2peng_id):
@@ -175,7 +175,7 @@ def choose_peng(state, card2peng_id):
         features = torch.tensor([features]).float().to(DEVICE)
         return PENG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
     except:
-        return True
+        return False
 
 
 def choose_gang(state, card2gang_id):
@@ -185,7 +185,7 @@ def choose_gang(state, card2gang_id):
         features = torch.tensor([features]).float().to(DEVICE)
         return GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
     except:
-        return True
+        return False
 
 
 def choose_an_gang(state, gang_card_ids):
@@ -199,7 +199,7 @@ def choose_an_gang(state, gang_card_ids):
         features = torch.tensor(features).float().to(DEVICE)
         return AN_GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
     except:
-        return True
+        return False
 
 
 def choose_bu_gang(state, gang_card_ids):
@@ -213,7 +213,7 @@ def choose_bu_gang(state, gang_card_ids):
         features = torch.tensor(features).float().to(DEVICE)
         return BU_GANG_MODEL(features).squeeze(dim=-1).detach().cpu().item() > 0.5
     except:
-        return True
+        return False
 
 
 # ================================================================================================

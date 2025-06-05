@@ -7,6 +7,7 @@ from action import *
 
 
 # todo: 算番有点问题，目前出现他人点炮但是不满8番却选择胡牌
+# 和绝张的判断有误：（1）可能不止听一张牌；（2）出牌和副露统计有误
 def check_zi_mo_hu(state):
     self_hand_card_ids = state["self_hand_card_ids"]
     self_player_id = state["self_player_id"]
@@ -48,6 +49,7 @@ def check_zi_mo_hu(state):
     #         else:
     #             played_card_ids[meld_card_id] += 4
     # is4thTile = played_card_ids[last_action_card_id] == 3
+    # todo: 和绝张的判断有误：（1）可能不止听一张牌；（2）出牌和副露统计有误
     is4thTile = False
     isAboutKong = False
     # 在botzone的规则下，每个人最多摸21次牌，自己的牌墙摸完即结束

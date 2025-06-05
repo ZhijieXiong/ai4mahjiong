@@ -41,18 +41,20 @@ class Player:
         winTile: str = Card.decoding(last_action_card_id)
         flowerCount: int = 0
         isSelfDrawn: bool = True
-        played_card_ids: dict = Counter([card_id for player_played_card_ids in players_played_card_ids for card_id in player_played_card_ids])
-        for i in range(4):
-            for meld_type, _, meld_card_id in players_melds[i]:
-                if meld_type == "Chi":
-                    played_card_ids[meld_card_id-1] += 1
-                    played_card_ids[meld_card_id] += 1
-                    played_card_ids[meld_card_id+1] += 1
-                elif meld_type == "Peng":
-                    played_card_ids[meld_card_id] += 3
-                else:
-                    played_card_ids[meld_card_id] += 4
-        is4thTile: bool = played_card_ids[last_action_card_id] == 3
+        # played_card_ids: dict = Counter([card_id for player_played_card_ids in players_played_card_ids for card_id in player_played_card_ids])
+        # for i in range(4):
+        #     for meld_type, _, meld_card_id in players_melds[i]:
+        #         if meld_type == "Chi":
+        #             played_card_ids[meld_card_id-1] += 1
+        #             played_card_ids[meld_card_id] += 1
+        #             played_card_ids[meld_card_id+1] += 1
+        #         elif meld_type == "Peng":
+        #             played_card_ids[meld_card_id] += 3
+        #         else:
+        #             played_card_ids[meld_card_id] += 4
+        # is4thTile: bool = played_card_ids[last_action_card_id] == 3
+        # todo: 和绝张的计算有误
+        is4thTile: bool = False
         isAboutKong: bool = False
         isWallLast: bool = is_last_card
         seatWind: int = self.self_wind
@@ -89,18 +91,20 @@ class Player:
         winTile: str = Card.decoding(last_action_card_id)
         flowerCount: int = 0
         isSelfDrawn: bool = False
-        played_card_ids: dict = Counter([card_id for player_played_card_ids in players_played_card_ids for card_id in player_played_card_ids])
-        for i in range(4):
-            for meld_type, _, meld_card_id in players_melds[i]:
-                if meld_type == "Chi":
-                    played_card_ids[meld_card_id-1] += 1
-                    played_card_ids[meld_card_id] += 1
-                    played_card_ids[meld_card_id+1] += 1
-                elif meld_type == "Peng":
-                    played_card_ids[meld_card_id] += 3
-                else:
-                    played_card_ids[meld_card_id] += 4
-        is4thTile: bool = played_card_ids[last_action_card_id] == 3
+        # played_card_ids: dict = Counter([card_id for player_played_card_ids in players_played_card_ids for card_id in player_played_card_ids])
+        # for i in range(4):
+        #     for meld_type, _, meld_card_id in players_melds[i]:
+        #         if meld_type == "Chi":
+        #             played_card_ids[meld_card_id-1] += 1
+        #             played_card_ids[meld_card_id] += 1
+        #             played_card_ids[meld_card_id+1] += 1
+        #         elif meld_type == "Peng":
+        #             played_card_ids[meld_card_id] += 3
+        #         else:
+        #             played_card_ids[meld_card_id] += 4
+        # is4thTile: bool = played_card_ids[last_action_card_id] == 3
+        # todo: 和绝张的计算有误
+        is4thTile: bool = False
         isAboutKong: bool = last_action == "BuGang"
         isWallLast: bool = is_last_card
         seatWind: int = self.self_wind
