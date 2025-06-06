@@ -70,7 +70,7 @@ if __name__ == "__main__":
     dim_rnn = 64
     model_dir = "/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain_aug"
     use_deep = "deep_models" in model_dir
-    model_names = [f"Play-{i}.ckt" for i in range(10,15)]
+    model_names = [f"Play-{i}.ckt" for i in range(40,52)]
     model_paths = [os.path.join(model_dir, model_name) for model_name in model_names]
     for model_path in model_paths:
         evaluate_model(model_path, dim_rnn, use_deep)

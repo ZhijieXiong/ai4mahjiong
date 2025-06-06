@@ -15,3 +15,5 @@ scripts
 examples4chinese_mahjiong/botzone/**.zip
 examples4chinese_mahjiong/demo.py
 examples4chinese_mahjiong/dnn/result.txt
+examples4chinese_mahjiong/dnn/result2.txt
+examples4chinese_mahjiong/run/run.txt

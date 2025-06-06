@@ -1,4 +1,5 @@
 import torch
+import functools
 import numpy as np
 
 from pymj.game.chinese_ofiicial_mahjiong.Competition import Competition
@@ -10,6 +11,18 @@ from pymj.agent.chinese_official_mahjiong.SLBasedHybirdAgent import SLBasedAgent
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 
+def log_run(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        line = "=" * 100 + "\n" + " " * 40 + f"开始运行{func.__name__}"
+        print(line)
+        result = func(*args, **kwargs)
+        print("=" * 100)
+        return result
+    return wrapper
+
+
+@log_run
 def test_competition1():
     """
     副露消融实验，基于随机打牌模型
@@ -25,6 +38,7 @@ def test_competition1():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition2():
     """
     副露消融实验，基于牌效率打牌模型
@@ -40,6 +54,7 @@ def test_competition2():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition3():
     """
     吃牌选择消融实验，基于牌效率模型
@@ -55,6 +70,7 @@ def test_competition3():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition4():
     """
     对比牌效率模型和随机打牌模型
@@ -70,6 +86,7 @@ def test_competition4():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition5():
     """
     副露消融实验，基于SL-based模型
@@ -121,6 +138,7 @@ def test_competition5():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition6():
     """
     对比牌效率模型和SL-based模型，同时做吃牌选择消融实验
@@ -154,6 +172,7 @@ def test_competition6():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition7():
     """
     模型大小消融实验
@@ -205,6 +224,7 @@ def test_competition7():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition8():
     """
     对比混合模型使用加权损失和不使用加权损失
@@ -248,6 +268,7 @@ def test_competition8():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition9():
     """
     对比Deep混合模型使用加权损失和不使用加权损失
@@ -295,6 +316,7 @@ def test_competition9():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition10():
     """
     对比不同程度的保守副露策略
@@ -350,6 +372,7 @@ def test_competition10():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition11():
     """
     对比不同程度的保守副露策略
@@ -405,9 +428,10 @@ def test_competition11():
         ], 256, random_generator=random_generator).run()
 
 
+@log_run
 def test_competition12():
     """
-    纯CNN模型和混合模型对不
+    纯CNN模型和混合模型对比
     """
     random_seed = 0
     random_generator: np.random.RandomState = np.random.RandomState(random_seed)
@@ -446,7 +470,7 @@ def test_competition12():
             ),
             SLBasedHybirdAgent(
                 random_generator,
-                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Play-48.ckt",
+                play_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain_aug/Play-48.ckt",
                 chi_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Chi-30.ckt",
                 peng_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Peng-11.ckt",
                 gang_model_path="/root/autodl-tmp/mah_jiong/deep_models_no_weight_no_noise_no_pretrain/Gang-9.ckt",
@@ -468,6 +492,6 @@ if __name__ == "__main__":
     # test_competition7()
     # test_competition8()
     # test_competition9()
-    test_competition10()
-    test_competition11()
-    # test_competition12()
+    # test_competition10()
+    # test_competition11()
+    test_competition12()
