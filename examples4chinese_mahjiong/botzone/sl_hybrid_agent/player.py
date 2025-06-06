@@ -262,7 +262,9 @@ def response():
             state["num_draw"] = data["num_draw"]
             my_action = response_self_draw(state)
             self_player_id = data["self_wind"]
-            if "PLAY" in my_action:
+            if "HU" in my_action:
+                pass
+            elif "PLAY" in my_action:
                 played_card_id = card_str2int(my_action.split(" ")[1])
                 data["last_observation"] = (self_player_id, "Play", played_card_id)
                 data["players_played_card_actions"][self_player_id].append("Play")
@@ -331,7 +333,9 @@ def response():
                 state["num_draw"] = data["num_draw"]
                 my_action = response_other_play(state)
                 self_player_id = data["self_wind"]
-                if "Gang" in my_action:
+                if "HU" in my_action:
+                    pass
+                elif "Gang" in my_action:
                     gang_card_id = card_str2int(my_action.split(" ")[1])
                     data["last_observation"] = (self_player_id, "Gang", gang_card_id)
                     data["players_melds"][self_player_id].append(("Gang", current_player_id, gang_card_id))
